@@ -15,5 +15,9 @@ pub mod econ_sim_poc {
     pub fn initialize_game(ctx: Context<InitializeGame>, max_tiles_from_center: u8) -> ProgramResult {
         game::initialize_game(ctx, max_tiles_from_center)
     }
+
+    pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u8, tile_mint_seed: String) -> ProgramResult {
+        tiles::mint_tile(ctx, tile_type, tile_mint_bump, tile_mint_seed)
+    }
 }
 
