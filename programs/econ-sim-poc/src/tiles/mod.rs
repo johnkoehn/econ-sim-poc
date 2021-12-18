@@ -38,8 +38,7 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
     tile_account.q = game_account.current_q;
     tile_account.r = game_account.current_r;
     tile_account.level = 0;
-    tile_account.tax_percent = 0;
-    tile_account.tax_percent_fraction = 0;
+    tile_account.tax_percent = 10;
     tile_account.min_worker_level = 0;
 
     tile_account.capacity = 0;
@@ -91,7 +90,7 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
 #[derive(Accounts)]
 #[instruction(tile_type: TileTypes, tile_mint_bump: u8, tile_mint_seed: String)]
 pub struct MintTile<'info> {
-    #[account(init, payer = authority, space = 8 + 32 + 1 + 4 + 4 + 1 + 1 + 1 + 1 + 8 + 8)]
+    #[account(init, payer = authority, space = 8 + 32 + 1 + 4 + 4 + 1 + 1 + 1 + 8 + 8)]
     pub tile_account: Account<'info, TileAccount>,
 
     #[account(has_one = authority, mut)]
@@ -139,11 +138,8 @@ pub struct TileAccount {
     // capacity is 'refilled'
     pub level: u8,
 
-    // these two combined make up 1.5% for example
     // 0 to 100
     pub tax_percent: u8,
-    // .00
-    pub tax_percent_fraction: u8,
 
     pub min_worker_level: u8,
 

@@ -23,65 +23,27 @@ describe('econ-sim-poc', () => {
 
   const gameAccountKey = web3.Keypair.generate();
 
-  it('It should initialize the game', async () => {
-    await program.rpc.initializeGame(1, {
-      accounts: {
-        gameAccount: gameAccountKey.publicKey,
-        signer: testKey1.publicKey,
-        rent: web3.SYSVAR_RENT_PUBKEY,
-        systemProgram: web3.SystemProgram.programId,
-      },
-      signers: [gameAccountKey, testKey1]
+  describe('Tiles', () => {
+    it('It should initialize the game', async () => {
+      await program.rpc.initializeGame(1, {
+        accounts: {
+          gameAccount: gameAccountKey.publicKey,
+          signer: testKey1.publicKey,
+          rent: web3.SYSVAR_RENT_PUBKEY,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        signers: [gameAccountKey, testKey1]
+      });
+
+      const gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
+      console.log(JSON.stringify(gameAccount, null, 4));
+
+      assert.ok(gameAccount.maxTiles === 7)
     });
 
-    const gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
-    console.log(JSON.stringify(gameAccount, null, 4));
+    it('should not allow a different account other than the game master to create the tiles', async () => {
+      const gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
 
-    assert.ok(gameAccount.maxTiles === 7)
-  });
-
-  it('should not allow a different account other than the game master to create the tiles', async () => {
-    const gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
-
-    const mintInfo = await createMintInfo(anchor, programId);
-    const tileType = getRandomTileType();
-
-    const tileAccountKey = web3.Keypair.generate();
-    const tileTokenAccount = await spl.Token.getAssociatedTokenAddress(
-      spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-      spl.TOKEN_PROGRAM_ID,
-      mintInfo.mint,
-      testKey2.publicKey
-    );
-
-    let errorMessage;
-    try {
-      await program.rpc.mintTile(tileType, mintInfo.mintBump, mintInfo.seed, {
-        accounts: {
-          tileAccount: tileAccountKey.publicKey,
-          gameAccount: gameAccountKey.publicKey,
-          tileTokenAccount: tileTokenAccount,
-          tileMint: mintInfo.mint,
-          authority: testKey2.publicKey,
-          receiver: testKey2.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: spl.TOKEN_PROGRAM_ID,
-          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY
-        },
-        signers: [testKey2, tileAccountKey]
-      })
-    } catch (err) {
-      errorMessage = err.msg;
-    }
-
-    assert.ok(errorMessage === 'A has_one constraint was violated');
-  });
-
-  it('should successfully create each tile in the game', async () => {
-    let gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
-
-    while (gameAccount.currentNumberOfTiles < gameAccount.maxTiles) {
       const mintInfo = await createMintInfo(anchor, programId);
       const tileType = getRandomTileType();
 
@@ -90,51 +52,125 @@ describe('econ-sim-poc', () => {
         spl.ASSOCIATED_TOKEN_PROGRAM_ID,
         spl.TOKEN_PROGRAM_ID,
         mintInfo.mint,
-        testKey1.publicKey
+        testKey2.publicKey
       );
 
-      await program.rpc.mintTile(tileType, mintInfo.mintBump, mintInfo.seed, {
-        accounts: {
-          tileAccount: tileAccountKey.publicKey,
-          gameAccount: gameAccountKey.publicKey,
-          tileTokenAccount: tileTokenAccount,
-          tileMint: mintInfo.mint,
-          authority: testKey1.publicKey,
-          receiver: testKey1.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: spl.TOKEN_PROGRAM_ID,
-          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY
-        },
-        signers: [testKey1, tileAccountKey]
-      })
+      let errorMessage;
+      try {
+        await program.rpc.mintTile(tileType, mintInfo.mintBump, mintInfo.seed, {
+          accounts: {
+            tileAccount: tileAccountKey.publicKey,
+            gameAccount: gameAccountKey.publicKey,
+            tileTokenAccount: tileTokenAccount,
+            tileMint: mintInfo.mint,
+            authority: testKey2.publicKey,
+            receiver: testKey2.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey2, tileAccountKey]
+        })
+      } catch (err) {
+        errorMessage = err.msg;
+      }
 
-      gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
-      console.log(`Minted ${JSON.stringify(gameAccount, null, 4)}`);
-    }
-  });
+      assert.ok(errorMessage === 'A has_one constraint was violated');
+    });
 
-  it('should throw an error if we try and create more than the max number of tiles set', async () => {
-    let errorMessage;
+    it('should successfully create each tile in the game', async () => {
+      let gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
 
-    try {
+      while (gameAccount.currentNumberOfTiles < gameAccount.maxTiles) {
+        const mintInfo = await createMintInfo(anchor, programId);
+        const tileType = getRandomTileType();
+
+        const tileAccountKey = web3.Keypair.generate();
+        const tileTokenAccount = await spl.Token.getAssociatedTokenAddress(
+          spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+          spl.TOKEN_PROGRAM_ID,
+          mintInfo.mint,
+          testKey1.publicKey
+        );
+
+        await program.rpc.mintTile(tileType, mintInfo.mintBump, mintInfo.seed, {
+          accounts: {
+            tileAccount: tileAccountKey.publicKey,
+            gameAccount: gameAccountKey.publicKey,
+            tileTokenAccount: tileTokenAccount,
+            tileMint: mintInfo.mint,
+            authority: testKey1.publicKey,
+            receiver: testKey1.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey1, tileAccountKey]
+        })
+
+        gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
+        console.log(`Minted ${JSON.stringify(gameAccount, null, 4)}`);
+      }
+    });
+
+    it('should throw an error if we try and create more than the max number of tiles set', async () => {
+      let errorMessage;
+
+      try {
+        const mintInfo = await createMintInfo(anchor, programId);
+        const tileType = getRandomTileType();
+
+        const tileAccountKey = web3.Keypair.generate();
+        const tileTokenAccount = await spl.Token.getAssociatedTokenAddress(
+          spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+          spl.TOKEN_PROGRAM_ID,
+          mintInfo.mint,
+          testKey1.publicKey
+        );
+
+        await program.rpc.mintTile(tileType, mintInfo.mintBump, mintInfo.seed, {
+          accounts: {
+            tileAccount: tileAccountKey.publicKey,
+            gameAccount: gameAccountKey.publicKey,
+            tileTokenAccount: tileTokenAccount,
+            tileMint: mintInfo.mint,
+            authority: testKey1.publicKey,
+            receiver: testKey1.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey1, tileAccountKey]
+        })
+      } catch (err) {
+        console.log(err.msg);
+        errorMessage = err.msg;
+      }
+
+      assert.ok(errorMessage === 'Max tiles minted');
+    });
+  })
+
+  describe('Workers', () => {
+    it('should allow the minting of workers', async () => {
       const mintInfo = await createMintInfo(anchor, programId);
-      const tileType = getRandomTileType();
 
-      const tileAccountKey = web3.Keypair.generate();
-      const tileTokenAccount = await spl.Token.getAssociatedTokenAddress(
+      const workerAccountKey = web3.Keypair.generate();
+      const workerTokenAccount = await spl.Token.getAssociatedTokenAddress(
         spl.ASSOCIATED_TOKEN_PROGRAM_ID,
         spl.TOKEN_PROGRAM_ID,
         mintInfo.mint,
         testKey1.publicKey
       );
 
-      await program.rpc.mintTile(tileType, mintInfo.mintBump, mintInfo.seed, {
+      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
         accounts: {
-          tileAccount: tileAccountKey.publicKey,
-          gameAccount: gameAccountKey.publicKey,
-          tileTokenAccount: tileTokenAccount,
-          tileMint: mintInfo.mint,
+          workerAccount: workerAccountKey.publicKey,
+          workerTokenAccount: workerTokenAccount,
+          workerMint: mintInfo.mint,
           authority: testKey1.publicKey,
           receiver: testKey1.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
@@ -142,13 +178,11 @@ describe('econ-sim-poc', () => {
           associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY
         },
-        signers: [testKey1, tileAccountKey]
+        signers: [testKey1, workerAccountKey]
       })
-    } catch (err) {
-      console.log(err.msg);
-      errorMessage = err.msg;
-    }
 
-    assert.ok(errorMessage === 'Max tiles minted');
+      const result = await program.account.workerAccount.all();
+      console.log(JSON.stringify(result, null, 4));
+    })
   });
 });
