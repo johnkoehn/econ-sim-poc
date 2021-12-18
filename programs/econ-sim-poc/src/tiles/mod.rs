@@ -45,7 +45,8 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
 
     // set initial capacity to max capacity
     tile_account.capacity = calculate_max_capacity(tile_account.level, game_account.cycles_per_period);
-    tile_account.last_assignment = Clock::get().unwrap().unix_timestamp;
+    // we hard code the last_cycle time so all tiles run one the same clock
+    tile_account.last_cycle_time = 1639859089;
 
     // mint tile
     anchor_spl::token::mint_to(
@@ -151,7 +152,7 @@ pub struct TileAccount {
     // consumed last time a worker was tasked
     pub capacity: u64,
 
-    pub last_assignment: i64
+    pub last_cycle_time: i64
 }
 
 #[error]

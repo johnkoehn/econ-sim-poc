@@ -6,7 +6,28 @@ use anchor_spl::{
 };
 use spl_token;
 
-use crate::tiles::TileAccount;
+use crate::{tiles::{TileAccount, TileTypes}, game::{GameAccount, cycles::calculate_capacity}};
+
+fn calculate_worker_capacity(level: u8) -> u64 {
+    if level == 1 {
+        return 1
+    }
+
+    u64::pow(2, (level - 1) as u32)
+}
+
+// here we are telling the rust complier, good day to you sir
+// we are returning a Skill reference from worker_account not tile_type
+fn get_worker_skill<'a>(tile_type: &TileTypes, skills: &'a &Skills) -> (&'a Skill, TaskTypes) {
+    match tile_type {
+        TileTypes::Food => (&skills.farm, TaskTypes::Farm),
+        TileTypes::Iron => (&skills.mine, TaskTypes::Mine),
+        TileTypes::Coal => (&skills.mine, TaskTypes::Mine),
+        TileTypes::Wood => (&skills.woodcutting, TaskTypes::Woodcutting),
+        TileTypes::RareMetals => (&skills.mine, TaskTypes::Mine),
+        TileTypes::Herbs => (&skills.gather, TaskTypes::Gather)
+    }
+}
 
 pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String) -> ProgramResult {
     let worker = &mut ctx.accounts.worker_account;
@@ -19,35 +40,35 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
     worker.task = None;
     worker.skills = Skills {
         farm: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         },
         mine: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         },
         woodcutting: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         },
         gather: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         },
         transport: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         },
         forge: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         },
         alchamey: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         },
         craft: Skill {
-            level: 0,
+            level: 1,
             experience: 0
         }
     };
@@ -81,8 +102,6 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
     Ok(())
 }
 
-// TODO: if owner changes, update owner
-
 pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     let worker_account = &mut ctx.accounts.worker_account;
     let worker_token_account = &mut ctx.accounts.worker_token_account;
@@ -105,28 +124,35 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     }
 
     // does the tile have the capacity ?
+    let tile_account = &mut ctx.accounts.tile_account;
+    let game_account = &ctx.accounts.game_account;
 
-    // update tile capacity
-    // update worker with task
-    // set amount
+    let (current_capacity, new_time) = calculate_capacity(tile_account, game_account);
+
+    if current_capacity == 0 {
+        return Err(ErrorCode::NoCapacity.into())
+    }
+    // so we have the capacity
+    // we have time last updated
+    let skills = &worker_account.skills;
+    let (skill, task_type) = get_worker_skill(&tile_account.tile_type, &skills);
+    let worker_capacity = calculate_worker_capacity(skill.level);
+
+    let capacity_taken = if (current_capacity as i64 - worker_capacity as i64) < 0 { current_capacity } else { worker_capacity };
+
+    worker_account.task = Some(Task {
+        reward: capacity_taken,
+        task_type: task_type,
+        task_complete_time: new_time + (game_account.cycle_time as i64 * game_account.cycles_per_period as i64),
+        tile_key: tile_account.key()
+    });
+    // update tile capacity and cycle time
+
+    tile_account.capacity = current_capacity - capacity_taken;
+    tile_account.last_cycle_time = new_time;
 
     Ok(())
 }
-
-// #[account(mut)]
-//     pub worker_account: Account<'info, WorkerAccount>,
-//     pub worker_token_account: Account<'info, TokenAccount>,
-
-//     #[account(mut)]
-//     pub tile_account: Account<'info, TileAccount>,
-
-//     #[account(mut)]
-//     pub authority: Signer<'info>,
-
-//     pub system_program: Program<'info, System>,
-//     pub associated_token_program: Program<'info, AssociatedToken>,
-
-//     pub rent: Sysvar<'info, Rent>
 
 #[derive(Accounts)]
 #[instruction(worker_mint_bump: u8, worker_mint_seed: String)]
@@ -171,6 +197,8 @@ pub struct AssignTask<'info> {
 
     #[account(mut)]
     pub tile_account: Account<'info, TileAccount>,
+
+    pub game_account: Account<'info, GameAccount>,
 
     #[account(mut)]
     pub authority: Signer<'info>,
@@ -253,6 +281,6 @@ pub enum ErrorCode {
     #[msg("Worker already has a task")]
     WorkerHasTask,
 
-    #[msg("Tile is at capacity")]
-    TileAtCapacity
+    #[msg("Tile has no capacity, please wait until resource are available")]
+    NoCapacity
 }
