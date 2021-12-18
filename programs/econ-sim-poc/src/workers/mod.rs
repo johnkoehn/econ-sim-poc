@@ -10,6 +10,7 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
     let worker = &mut ctx.accounts.worker_account;
     let worker_mint = &mut ctx.accounts.worker_mint;
 
+    worker.owner = ctx.accounts.receiver.key();
     worker.mint_key = worker_mint.key();
     worker.q = 0;
     worker.r = 0;
@@ -81,7 +82,7 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
 #[derive(Accounts)]
 #[instruction(worker_mint_bump: u8, worker_mint_seed: String)]
 pub struct MintWorker<'info> {
-    #[account(init, payer=authority, space = 8 + 32 + 4 + 4 + 72 + 50)]
+    #[account(init, payer=authority, space = 8 + 32 + 32 + 4 + 4 + 72 + 50)]
     pub worker_account: Account<'info, WorkerAccount>,
 
     #[account(
@@ -113,9 +114,11 @@ pub struct MintWorker<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
-// 32 + 4 + 4 + 72 + 50
+// 32 + 32 + 4 + 4 + 72 + 50
 #[account]
 pub struct WorkerAccount {
+    // makes look up quicker but a user must always present actual proof throught NFT
+    pub owner: Pubkey,
     pub mint_key: Pubkey,
 
     // for now we wil default these to 0,0

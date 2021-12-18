@@ -181,8 +181,8 @@ describe('econ-sim-poc', () => {
         signers: [testKey1, workerAccountKey]
       })
 
-      const result = await program.account.workerAccount.all();
-      console.log(JSON.stringify(result, null, 4));
+      // const result = await program.account.workerAccount.all();
+      // console.log(JSON.stringify(result, null, 4));
     })
   });
 });
