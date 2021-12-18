@@ -9,6 +9,7 @@ use spl_token;
 use crate::game::GameAccount;
 
 use self::hexagons::calculate_next_coordinates;
+use crate::cycles::calculate_max_capacity;
 
 pub mod hexagons;
 
@@ -38,11 +39,12 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
     tile_account.tile_type = tile_type;
     tile_account.q = game_account.current_q;
     tile_account.r = game_account.current_r;
-    tile_account.level = 0;
+    tile_account.level = 1;
     tile_account.tax_percent = 10;
     tile_account.min_worker_level = 0;
 
-    tile_account.capacity = 0;
+    // set initial capacity to max capacity
+    tile_account.capacity = calculate_max_capacity(tile_account.level, game_account.cycles_per_period);
     tile_account.last_assignment = Clock::get().unwrap().unix_timestamp;
 
     // mint tile

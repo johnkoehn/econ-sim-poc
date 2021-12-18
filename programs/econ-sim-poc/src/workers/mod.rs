@@ -2,9 +2,11 @@ use anchor_lang::{prelude::*, solana_program::instruction};
 use borsh::{BorshDeserialize, BorshSerialize};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount},
+    token::{Mint, Token, TokenAccount, accessor::authority},
 };
 use spl_token;
+
+use crate::tiles::TileAccount;
 
 pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String) -> ProgramResult {
     let worker = &mut ctx.accounts.worker_account;
@@ -79,6 +81,53 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
     Ok(())
 }
 
+// TODO: if owner changes, update owner
+
+pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
+    let worker_account = &mut ctx.accounts.worker_account;
+    let worker_token_account = &mut ctx.accounts.worker_token_account;
+    let authority = &mut ctx.accounts.authority;
+
+    if worker_account.mint_key != worker_token_account.mint.key() {
+        return Err(ErrorCode::IncorrectTokenAccount.into())
+    }
+
+    if authority.key() != worker_token_account.key() {
+        return Err(ErrorCode::NotTokenAccountOwner.into())
+    }
+
+    if worker_token_account.amount != 1 {
+        return Err(ErrorCode::NotWorkerOwner.into())
+    }
+
+    if worker_account.task.is_some() {
+        return Err(ErrorCode::WorkerHasTask.into())
+    }
+
+    // does the tile have the capacity ?
+
+    // update tile capacity
+    // update worker with task
+    // set amount
+
+    Ok(())
+}
+
+// #[account(mut)]
+//     pub worker_account: Account<'info, WorkerAccount>,
+//     pub worker_token_account: Account<'info, TokenAccount>,
+
+//     #[account(mut)]
+//     pub tile_account: Account<'info, TileAccount>,
+
+//     #[account(mut)]
+//     pub authority: Signer<'info>,
+
+//     pub system_program: Program<'info, System>,
+//     pub associated_token_program: Program<'info, AssociatedToken>,
+
+//     pub rent: Sysvar<'info, Rent>
+
 #[derive(Accounts)]
 #[instruction(worker_mint_bump: u8, worker_mint_seed: String)]
 pub struct MintWorker<'info> {
@@ -109,6 +158,24 @@ pub struct MintWorker<'info> {
     pub receiver: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct AssignTask<'info> {
+    #[account(mut)]
+    pub worker_account: Account<'info, WorkerAccount>,
+    pub worker_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub tile_account: Account<'info, TileAccount>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub rent: Sysvar<'info, Rent>
@@ -170,4 +237,22 @@ pub enum TaskTypes {
     Forge = 5,
     Alchamey = 6,
     Craft = 7
+}
+
+#[error]
+pub enum ErrorCode {
+    #[msg("You do not own the worker")]
+    NotWorkerOwner,
+
+    #[msg("Incorrect token account")]
+    IncorrectTokenAccount,
+
+    #[msg("You are not the token account owner")]
+    NotTokenAccountOwner,
+
+    #[msg("Worker already has a task")]
+    WorkerHasTask,
+
+    #[msg("Tile is at capacity")]
+    TileAtCapacity
 }

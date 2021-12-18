@@ -25,7 +25,7 @@ describe('econ-sim-poc', () => {
 
   describe('Tiles', () => {
     it('It should initialize the game', async () => {
-      await program.rpc.initializeGame(1, {
+      await program.rpc.initializeGame(1, 1, 8, {
         accounts: {
           gameAccount: gameAccountKey.publicKey,
           signer: testKey1.publicKey,
@@ -109,6 +109,9 @@ describe('econ-sim-poc', () => {
           },
           signers: [testKey1, tileAccountKey]
         })
+
+        const tileAccount = await program.account.tileAccount.fetch(tileAccountKey.publicKey);
+        assert.ok(tileAccount.capacity.toNumber() === 96)
 
         gameAccount = await program.account.gameAccount.fetch(gameAccountKey.publicKey);
         console.log(`Minted ${JSON.stringify(gameAccount, null, 4)}`);
