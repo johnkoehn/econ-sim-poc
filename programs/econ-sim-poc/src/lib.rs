@@ -28,5 +28,9 @@ pub mod econ_sim_poc {
     pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
         workers::assign_task(ctx)
     }
+
+    pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
+        workers::complete_task(ctx)
+    }
 }
 

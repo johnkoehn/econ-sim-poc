@@ -1,12 +1,12 @@
-use anchor_lang::{prelude::*, solana_program::instruction};
+use anchor_lang::{prelude::*, solana_program::{instruction, clock}};
 use borsh::{BorshDeserialize, BorshSerialize};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount, accessor::authority},
+    token::{Mint, Token, TokenAccount},
 };
 use spl_token;
 
-use crate::{tiles::{TileAccount, TileTypes}, game::{GameAccount, cycles::calculate_capacity}};
+use crate::{tiles::{TileAccount, TileTypes, TileTokenAccount}, game::{GameAccount, cycles::calculate_capacity}};
 
 fn calculate_worker_capacity(level: u8) -> u64 {
     if level == 1 {
@@ -16,16 +16,32 @@ fn calculate_worker_capacity(level: u8) -> u64 {
     u64::pow(2, (level - 1) as u32)
 }
 
+fn worker_ownership_checks(worker_account: &Account<WorkerAccount>, worker_token_account: &Account<TokenAccount>, authority: &Signer) -> ProgramResult {
+    if worker_account.mint_key != worker_token_account.mint.key() {
+        return Err(WorkerErrorCodes::IncorrectTokenAccount.into())
+    }
+
+    if authority.key() != worker_token_account.owner {
+        return Err(WorkerErrorCodes::NotTokenAccountOwner.into())
+    }
+
+    if worker_token_account.amount != 1 {
+        return Err(WorkerErrorCodes::NotWorkerOwner.into())
+    }
+
+    Ok(())
+}
+
 // here we are telling the rust complier, good day to you sir
 // we are returning a Skill reference from worker_account not tile_type
-fn get_worker_skill<'a>(tile_type: &TileTypes, skills: &'a &Skills) -> (&'a Skill, TaskTypes) {
+fn get_worker_skill<'a>(tile_type: &TileTypes, skills: &'a mut Skills) -> (&'a mut Skill, TaskTypes) {
     match tile_type {
-        TileTypes::Food => (&skills.farm, TaskTypes::Farm),
-        TileTypes::Iron => (&skills.mine, TaskTypes::Mine),
-        TileTypes::Coal => (&skills.mine, TaskTypes::Mine),
-        TileTypes::Wood => (&skills.woodcutting, TaskTypes::Woodcutting),
-        TileTypes::RareMetals => (&skills.mine, TaskTypes::Mine),
-        TileTypes::Herbs => (&skills.gather, TaskTypes::Gather)
+        TileTypes::Food => (&mut skills.farm, TaskTypes::Farm),
+        TileTypes::Iron => (&mut skills.mine, TaskTypes::Mine),
+        TileTypes::Coal => (&mut skills.mine, TaskTypes::Mine),
+        TileTypes::Wood => (&mut skills.woodcutting, TaskTypes::Woodcutting),
+        TileTypes::RareMetals => (&mut skills.mine, TaskTypes::Mine),
+        TileTypes::Herbs => (&mut skills.gather, TaskTypes::Gather)
     }
 }
 
@@ -107,20 +123,10 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     let worker_token_account = &ctx.accounts.worker_token_account;
     let authority = &ctx.accounts.authority;
 
-    if worker_account.mint_key != worker_token_account.mint.key() {
-        return Err(ErrorCode::IncorrectTokenAccount.into())
-    }
-
-    if authority.key() != worker_token_account.owner {
-        return Err(ErrorCode::NotTokenAccountOwner.into())
-    }
-
-    if worker_token_account.amount != 1 {
-        return Err(ErrorCode::NotWorkerOwner.into())
-    }
+    worker_ownership_checks(worker_account, worker_token_account, authority)?;
 
     if worker_account.task.is_some() {
-        return Err(ErrorCode::WorkerHasTask.into())
+        return Err(WorkerErrorCodes::WorkerHasTask.into())
     }
 
     // does the tile have the capacity ?
@@ -130,12 +136,12 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     let (current_capacity, new_time) = calculate_capacity(tile_account, game_account);
 
     if current_capacity == 0 {
-        return Err(ErrorCode::NoCapacity.into())
+        return Err(WorkerErrorCodes::NoCapacity.into())
     }
     // so we have the capacity
     // we have time last updated
-    let skills = &worker_account.skills;
-    let (skill, task_type) = get_worker_skill(&tile_account.tile_type, &skills);
+    let skills = &mut worker_account.skills;
+    let (skill, task_type) = get_worker_skill(&tile_account.tile_type, skills);
     let worker_capacity = calculate_worker_capacity(skill.level);
 
     let capacity_taken = if (current_capacity as i64 - worker_capacity as i64) < 0 { current_capacity } else { worker_capacity };
@@ -150,6 +156,66 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     // update tile capacity and cycle time
     tile_account.capacity = current_capacity - capacity_taken;
     tile_account.last_cycle_time = new_time;
+
+    Ok(())
+}
+
+pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
+    fn get_task_info(worker_account: &mut WorkerAccount) -> Task {
+        worker_account.task.as_ref().unwrap().clone()
+    }
+
+    let worker_account = &mut ctx.accounts.worker_account;
+    let worker_token_account = &ctx.accounts.worker_token_account;
+    let authority = &ctx.accounts.authority;
+    let tile_account = &mut ctx.accounts.tile_account;
+    let tile_token_account = &mut ctx.accounts.tile_token_account;
+
+    worker_ownership_checks(worker_account, worker_token_account, authority)?;
+
+    if worker_account.task.is_none() {
+        return Err(WorkerErrorCodes::WorkerHasNoTask.into())
+    }
+
+    let current_time = Clock::get().unwrap().unix_timestamp;
+    let task = get_task_info(worker_account);
+
+    if current_time < task.task_complete_time {
+        return Err(WorkerErrorCodes::TaskNotComplete.into())
+    }
+
+    if task.tile_key != tile_account.key() {
+        return Err(WorkerErrorCodes::WrongTile.into())
+    }
+
+    // is tile token account new or not?
+    if tile_token_account.is_initialized {
+        // preform checks
+        if tile_token_account.owner != authority.key() {
+            return Err(WorkerErrorCodes::NotOwnerOfTileTokenAccount.into())
+        }
+
+        if tile_token_account.tile != tile_account.key() {
+            return Err(WorkerErrorCodes::WrongTileTokenAccount.into())
+        }
+
+    } else {
+        // initialize account
+        tile_token_account.owner = authority.key();
+        tile_token_account.tile = tile_account.key();
+        tile_token_account.resources = 0;
+        tile_token_account.is_initialized = true;
+    }
+
+    tile_token_account.resources += task.reward;
+    tile_account.resources_owed_to_owner_by_10 += task.reward;
+
+    let skills = &mut worker_account.skills;
+
+    let result = get_worker_skill(&tile_account.tile_type, skills);
+    let skill = result.0;
+    skill.experience += task.reward;
+    worker_account.task = None;
 
     Ok(())
 }
@@ -200,12 +266,35 @@ pub struct AssignTask<'info> {
 
     pub game_account: Account<'info, GameAccount>,
 
-    #[account(mut)]
     pub authority: Signer<'info>,
 
     pub system_program: Program<'info, System>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 
+    pub rent: Sysvar<'info, Rent>
+}
+
+#[derive(Accounts)]
+pub struct CompleteTask<'info> {
+    #[account(
+        init_if_needed,
+        payer = authority,
+        space = 8 + 1 + 32 + 32 + 8
+    )]
+    pub tile_token_account: Account<'info, TileTokenAccount>,
+
+    #[account(mut)]
+    pub worker_account: Account<'info, WorkerAccount>,
+    pub worker_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub tile_account: Account<'info, TileAccount>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>
 }
 
@@ -268,7 +357,7 @@ pub enum TaskTypes {
 }
 
 #[error]
-pub enum ErrorCode {
+pub enum WorkerErrorCodes {
     #[msg("You do not own the worker")]
     NotWorkerOwner,
 
@@ -280,6 +369,21 @@ pub enum ErrorCode {
 
     #[msg("Worker already has a task")]
     WorkerHasTask,
+
+    #[msg("Worker has no task, first assign a task")]
+    WorkerHasNoTask,
+
+    #[msg("Task Not Complete")]
+    TaskNotComplete,
+
+    #[msg("You are not the owner of this tile token account")]
+    NotOwnerOfTileTokenAccount,
+
+    #[msg("The tile token account is for a different tile")]
+    WrongTileTokenAccount,
+
+    #[msg("Wrong tile for task")]
+    WrongTile,
 
     #[msg("Tile has no capacity, please wait until resource are available")]
     NoCapacity

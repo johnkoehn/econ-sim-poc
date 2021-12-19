@@ -23,6 +23,7 @@ describe('econ-sim-poc', () => {
 
   const gameAccountKey = web3.Keypair.generate();
 
+  let tileAccountKeyPrevious;
   let tileAccountKey;
   describe('Tiles', () => {
     it('It should initialize the game', async () => {
@@ -87,6 +88,7 @@ describe('econ-sim-poc', () => {
         const mintInfo = await createMintInfo(anchor, programId);
         const tileType = getRandomTileType();
 
+        tileAccountKeyPrevious = tileAccountKey;
         tileAccountKey = web3.Keypair.generate();
         const tileTokenAccount = await spl.Token.getAssociatedTokenAddress(
           spl.ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -189,11 +191,12 @@ describe('econ-sim-poc', () => {
       // console.log(JSON.stringify(result, null, 4));
     });
 
+    const testWorkerAccountKey = web3.Keypair.generate();
+    let testWorkerTokenAccount;
     it('should allow a minted worker to be tasked to a tile', async () => {
       const mintInfo = await createMintInfo(anchor, programId);
 
-      const workerAccountKey = web3.Keypair.generate();
-      const workerTokenAccount = await spl.Token.getAssociatedTokenAddress(
+      testWorkerTokenAccount = await spl.Token.getAssociatedTokenAddress(
         spl.ASSOCIATED_TOKEN_PROGRAM_ID,
         spl.TOKEN_PROGRAM_ID,
         mintInfo.mint,
@@ -202,8 +205,8 @@ describe('econ-sim-poc', () => {
 
       await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
         accounts: {
-          workerAccount: workerAccountKey.publicKey,
-          workerTokenAccount: workerTokenAccount,
+          workerAccount: testWorkerAccountKey.publicKey,
+          workerTokenAccount: testWorkerTokenAccount,
           workerMint: mintInfo.mint,
           authority: testKey1.publicKey,
           receiver: testKey1.publicKey,
@@ -212,14 +215,14 @@ describe('econ-sim-poc', () => {
           associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY
         },
-        signers: [testKey1, workerAccountKey]
+        signers: [testKey1, testWorkerAccountKey]
       });
 
       try {
         await program.rpc.assignTask({
           accounts: {
-            workerAccount: workerAccountKey.publicKey,
-            workerTokenAccount: workerTokenAccount,
+            workerAccount: testWorkerAccountKey.publicKey,
+            workerTokenAccount: testWorkerTokenAccount,
             tileAccount: tileAccountKey.publicKey,
             gameAccount: gameAccountKey.publicKey,
             authority: testKey1.publicKey,
@@ -235,7 +238,7 @@ describe('econ-sim-poc', () => {
       }
 
       const tile = await program.account.tileAccount.fetch(tileAccountKey.publicKey);
-      const worker = await program.account.workerAccount.fetch(workerAccountKey.publicKey);
+      const worker = await program.account.workerAccount.fetch(testWorkerAccountKey.publicKey);
 
       console.log(JSON.stringify(tile, null, 4));
       console.log(JSON.stringify(worker, null, 4));
@@ -243,6 +246,110 @@ describe('econ-sim-poc', () => {
       console.log(tile.capacity.toNumber())
       console.log(tile.lastCycleTime.toNumber())
       console.log(worker.task.taskCompleteTime.toNumber())
+    });
+
+    it('should error out if we assign a worker that already has a task', async () => {
+      let hadError = false;
+      try {
+        await program.rpc.assignTask({
+          accounts: {
+            workerAccount: testWorkerAccountKey.publicKey,
+            workerTokenAccount: testWorkerTokenAccount,
+            tileAccount: tileAccountKey.publicKey,
+            gameAccount: gameAccountKey.publicKey,
+            authority: testKey1.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey1]
+        })
+      } catch (err) {
+        hadError = true;
+      }
+
+      assert.ok(hadError);
+    });
+
+    it('should not allow the user to complete the worker task until a full period has occured', async () => {
+      const tileTokenAccountKey = web3.Keypair.generate();
+
+      let hadError;
+      try {
+        await program.rpc.completeTask({
+          accounts: {
+            tileTokenAccount: tileTokenAccountKey.publicKey,
+            workerAccount: testWorkerAccountKey.publicKey,
+            workerTokenAccount: testWorkerTokenAccount,
+            tileAccount: tileAccountKey.publicKey,
+            authority: testKey1.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey1, tileTokenAccountKey]
+        })
+      } catch (err) {
+        hadError = true
+      }
+
+      assert.ok(hadError);
+    });
+
+    it('should throw an error if the wrong tile for the task is passed in', async () => {
+      const tileTokenAccountKey = web3.Keypair.generate();
+      await setTimeout(8000);
+
+      let hadError;
+      try {
+        await program.rpc.completeTask({
+          accounts: {
+            tileTokenAccount: tileTokenAccountKey.publicKey,
+            workerAccount: testWorkerAccountKey.publicKey,
+            workerTokenAccount: testWorkerTokenAccount,
+            tileAccount: tileAccountKeyPrevious.publicKey,
+            authority: testKey1.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey1, tileTokenAccountKey]
+        })
+      } catch (err) {
+        console.log(err.msg);
+        hadError = true
+      }
+
+      assert.ok(hadError);
+    });
+
+    it('should allow the user to complete the worker task once a full period has occured', async () => {
+      const tileTokenAccountKey = web3.Keypair.generate();
+
+      try {
+        await program.rpc.completeTask({
+          accounts: {
+            tileTokenAccount: tileTokenAccountKey.publicKey,
+            workerAccount: testWorkerAccountKey.publicKey,
+            workerTokenAccount: testWorkerTokenAccount,
+            tileAccount: tileAccountKey.publicKey,
+            authority: testKey1.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey1, tileTokenAccountKey]
+        })
+      } catch (err) {
+        console.log(JSON.stringify(err, null, 4));
+        throw err;
+      }
+
+      const tile = await program.account.tileAccount.fetch(tileAccountKey.publicKey);
+      const worker = await program.account.workerAccount.fetch(testWorkerAccountKey.publicKey);
+
+      console.log(JSON.stringify(tile, null, 4));
+      console.log(JSON.stringify(worker, null, 4));
     });
   });
 });

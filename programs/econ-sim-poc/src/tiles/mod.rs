@@ -42,6 +42,7 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
     tile_account.level = 1;
     tile_account.tax_percent = 10;
     tile_account.min_worker_level = 0;
+    tile_account.resources_owed_to_owner_by_10 = 0;
 
     // set initial capacity to max capacity
     tile_account.capacity = calculate_max_capacity(tile_account.level, game_account.cycles_per_period);
@@ -94,7 +95,7 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
 #[derive(Accounts)]
 #[instruction(tile_type: TileTypes, tile_mint_bump: u8, tile_mint_seed: String)]
 pub struct MintTile<'info> {
-    #[account(init, payer = authority, space = 8 + 32 + 32 + 1 + 4 + 4 + 1 + 1 + 1 + 8 + 8)]
+    #[account(init, payer = authority, space = 8 + 32 + 32 + 1 + 4 + 4 + 1 + 1 + 1 + 8 + 8 + 8)]
     pub tile_account: Account<'info, TileAccount>,
 
     #[account(has_one = authority, mut)]
@@ -152,7 +153,20 @@ pub struct TileAccount {
     // consumed last time a worker was tasked
     pub capacity: u64,
 
-    pub last_cycle_time: i64
+    pub last_cycle_time: i64,
+
+    // for every 10, the owner gets one resource
+    pub resources_owed_to_owner_by_10: u64
+}
+
+// stores the tile tokens a user has rights to
+// these tokens need to be transported to a market to become actual tokens
+#[account]
+pub struct TileTokenAccount {
+    pub is_initialized: bool,
+    pub owner: Pubkey,
+    pub tile: Pubkey,
+    pub resources: u64
 }
 
 #[error]
