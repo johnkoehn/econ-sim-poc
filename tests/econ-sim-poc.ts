@@ -23,6 +23,7 @@ describe('econ-sim-poc', () => {
 
   const gameAccountKey = web3.Keypair.generate();
 
+  let tileAccountKey;
   describe('Tiles', () => {
     it('It should initialize the game', async () => {
       await program.rpc.initializeGame(1, 1, 8, {
@@ -86,7 +87,7 @@ describe('econ-sim-poc', () => {
         const mintInfo = await createMintInfo(anchor, programId);
         const tileType = getRandomTileType();
 
-        const tileAccountKey = web3.Keypair.generate();
+        tileAccountKey = web3.Keypair.generate();
         const tileTokenAccount = await spl.Token.getAssociatedTokenAddress(
           spl.ASSOCIATED_TOKEN_PROGRAM_ID,
           spl.TOKEN_PROGRAM_ID,
@@ -125,7 +126,7 @@ describe('econ-sim-poc', () => {
         const mintInfo = await createMintInfo(anchor, programId);
         const tileType = getRandomTileType();
 
-        const tileAccountKey = web3.Keypair.generate();
+        const badTileAccountKey = web3.Keypair.generate();
         const tileTokenAccount = await spl.Token.getAssociatedTokenAddress(
           spl.ASSOCIATED_TOKEN_PROGRAM_ID,
           spl.TOKEN_PROGRAM_ID,
@@ -135,7 +136,7 @@ describe('econ-sim-poc', () => {
 
         await program.rpc.mintTile(tileType, mintInfo.mintBump, mintInfo.seed, {
           accounts: {
-            tileAccount: tileAccountKey.publicKey,
+            tileAccount: badTileAccountKey.publicKey,
             gameAccount: gameAccountKey.publicKey,
             tileTokenAccount: tileTokenAccount,
             tileMint: mintInfo.mint,
@@ -146,7 +147,7 @@ describe('econ-sim-poc', () => {
             associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
             rent: anchor.web3.SYSVAR_RENT_PUBKEY
           },
-          signers: [testKey1, tileAccountKey]
+          signers: [testKey1, badTileAccountKey]
         })
       } catch (err) {
         console.log(err.msg);
@@ -186,6 +187,62 @@ describe('econ-sim-poc', () => {
 
       // const result = await program.account.workerAccount.all();
       // console.log(JSON.stringify(result, null, 4));
-    })
+    });
+
+    it('should allow a minted worker to be tasked to a tile', async () => {
+      const mintInfo = await createMintInfo(anchor, programId);
+
+      const workerAccountKey = web3.Keypair.generate();
+      const workerTokenAccount = await spl.Token.getAssociatedTokenAddress(
+        spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+        spl.TOKEN_PROGRAM_ID,
+        mintInfo.mint,
+        testKey1.publicKey
+      );
+
+      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
+        accounts: {
+          workerAccount: workerAccountKey.publicKey,
+          workerTokenAccount: workerTokenAccount,
+          workerMint: mintInfo.mint,
+          authority: testKey1.publicKey,
+          receiver: testKey1.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: spl.TOKEN_PROGRAM_ID,
+          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY
+        },
+        signers: [testKey1, workerAccountKey]
+      });
+
+      try {
+        await program.rpc.assignTask({
+          accounts: {
+            workerAccount: workerAccountKey.publicKey,
+            workerTokenAccount: workerTokenAccount,
+            tileAccount: tileAccountKey.publicKey,
+            gameAccount: gameAccountKey.publicKey,
+            authority: testKey1.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY
+          },
+          signers: [testKey1]
+        })
+      } catch (err) {
+        console.log(err);
+        throw err;
+      }
+
+      const tile = await program.account.tileAccount.fetch(tileAccountKey.publicKey);
+      const worker = await program.account.workerAccount.fetch(workerAccountKey.publicKey);
+
+      console.log(JSON.stringify(tile, null, 4));
+      console.log(JSON.stringify(worker, null, 4));
+
+      console.log(tile.capacity.toNumber())
+      console.log(tile.lastCycleTime.toNumber())
+      console.log(worker.task.taskCompleteTime.toNumber())
+    });
   });
 });

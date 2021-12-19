@@ -104,14 +104,14 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
 
 pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     let worker_account = &mut ctx.accounts.worker_account;
-    let worker_token_account = &mut ctx.accounts.worker_token_account;
-    let authority = &mut ctx.accounts.authority;
+    let worker_token_account = &ctx.accounts.worker_token_account;
+    let authority = &ctx.accounts.authority;
 
     if worker_account.mint_key != worker_token_account.mint.key() {
         return Err(ErrorCode::IncorrectTokenAccount.into())
     }
 
-    if authority.key() != worker_token_account.key() {
+    if authority.key() != worker_token_account.owner {
         return Err(ErrorCode::NotTokenAccountOwner.into())
     }
 
@@ -146,8 +146,8 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
         task_complete_time: new_time + (game_account.cycle_time as i64 * game_account.cycles_per_period as i64),
         tile_key: tile_account.key()
     });
-    // update tile capacity and cycle time
 
+    // update tile capacity and cycle time
     tile_account.capacity = current_capacity - capacity_taken;
     tile_account.last_cycle_time = new_time;
 

@@ -24,5 +24,9 @@ pub mod econ_sim_poc {
     pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String) -> ProgramResult {
         workers::mint_worker(ctx, worker_mint_bump, worker_mint_seed)
     }
+
+    pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
+        workers::assign_task(ctx)
+    }
 }
 
