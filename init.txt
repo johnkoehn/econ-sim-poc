@@ -1,0 +1,2 @@
+solana airdrop 100 -k tests/testKeys/testKey.json
+solana airdrop 100 -k tests/testKeys/testKey2.json
