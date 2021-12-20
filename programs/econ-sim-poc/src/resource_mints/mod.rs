@@ -82,6 +82,7 @@ pub fn transport_resource(ctx: Context<TransportResource>) -> ProgramResult {
 }
 
 pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, resource_mint_bump: u8, resource_mint_seed: String) -> ProgramResult {
+    msg!("here0");
     let game_account = &ctx.accounts.game_account;
     let start_tile = &ctx.accounts.start_tile;
     let destination_tile = &ctx.accounts.destination_tile;
@@ -92,10 +93,14 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
     let resource_token_account = &mut ctx.accounts.resource_token_account;
     let authority = &ctx.accounts.authority;
 
+    msg!("here");
     worker_ownership_checks(worker_account, worker_token_account, authority)?;
+    msg!("here2");
+
     if worker_account.task.is_none() {
         return Err(WorkerErrorCodes::WorkerHasNoTask.into());
     }
+    msg!("here3");
 
     let task = worker_account.task.as_ref().unwrap().clone();
     let current_time = Clock::get().unwrap().unix_timestamp;
@@ -103,6 +108,7 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
     if current_time < task.task_complete_time {
         return Err(WorkerErrorCodes::TaskNotComplete.into())
     }
+    msg!("here4");
 
     if task.task_type != TaskTypes::Transport {
         return Err(ResourceMintErrorCodes::MustBeTransportTask.into())
@@ -158,18 +164,18 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
 #[derive(Accounts)]
 #[instruction(resource_mint_bump: u8, resource_mint_seed: String)]
 pub struct CompleteTransportResource<'info> {
-    pub game_account: Account<'info, GameAccount>,
-    pub start_tile: Account<'info, TileAccount>,
-    pub destination_tile: Account<'info, TileAccount>,
+    pub game_account: Box<Account<'info, GameAccount>>,
+    pub start_tile: Box<Account<'info, TileAccount>>,
+    pub destination_tile: Box<Account<'info, TileAccount>>,
 
     #[account(mut)]
-    pub worker_account: Account<'info, WorkerAccount>,
-    pub worker_token_account: Account<'info, TokenAccount>,
+    pub worker_account: Box<Account<'info, WorkerAccount>>,
+    pub worker_token_account: Box<Account<'info, TokenAccount>>,
 
-    pub resource_info: Account<'info, ResourceInfo>,
+    pub resource_info: Box<Account<'info, ResourceInfo>>,
 
     #[account(mut)]
-    pub resource_token_mint: Account<'info, Mint>,
+    pub resource_token_mint: Box<Account<'info, Mint>>,
 
     #[account(
         init_if_needed,
@@ -177,8 +183,9 @@ pub struct CompleteTransportResource<'info> {
         associated_token::mint = resource_token_mint,
         associated_token::authority = authority,
     )]
-    pub resource_token_account: Account<'info, TokenAccount>,
+    pub resource_token_account: Box<Account<'info, TokenAccount>>,
 
+    #[account(mut)]
     pub authority: Signer<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
