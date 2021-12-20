@@ -21,14 +21,27 @@ pub enum TileTypes {
     Coal = 2,
     Wood = 3,
     RareMetals = 4,
-    Herbs = 5
+    Herbs = 5,
+    City = 6
+}
+
+pub fn tile_token_account_checks(tile_token_account: &Account<TileTokenAccount>, tile_account: &Account<TileAccount>, authority: &Signer) -> ProgramResult {
+    if tile_token_account.owner != authority.key() {
+        return Err(TileErrorCodes::NotOwnerOfTileTokenAccount.into())
+    }
+
+    if tile_token_account.tile != tile_account.key() {
+        return Err(TileErrorCodes::WrongTileTokenAccount.into())
+    }
+
+    Ok(())
 }
 
 pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u8, tile_mint_seed: String) -> ProgramResult {
     let game_account = &mut ctx.accounts.game_account;
 
     if game_account.current_number_of_tiles >= game_account.max_tiles {
-        return Err(ErrorCode::MaxTiles.into())
+        return Err(TileErrorCodes::MaxTiles.into())
     }
 
     let tile_mint = &mut ctx.accounts.tile_mint;
@@ -47,7 +60,7 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
     // set initial capacity to max capacity
     tile_account.capacity = calculate_max_capacity(tile_account.level, game_account.cycles_per_period);
     // we hard code the last_cycle time so all tiles run one the same clock
-    tile_account.last_cycle_time = 1639859089;
+    tile_account.last_cycle_time = game_account.start_time;
 
     // mint tile
     anchor_spl::token::mint_to(
@@ -170,10 +183,19 @@ pub struct TileTokenAccount {
 }
 
 #[error]
-pub enum ErrorCode {
+pub enum TileErrorCodes {
     #[msg("Max tiles minted")]
     MaxTiles,
 
     #[msg("Only the game master can create tiles")]
-    NotGameMaster
+    NotGameMaster,
+
+    #[msg("You are not the owner of this tile token account")]
+    NotOwnerOfTileTokenAccount,
+
+    #[msg("The tile token account is for a different tile")]
+    WrongTileTokenAccount,
+
+    #[msg("Tile token account has no resources")]
+    NoResources
 }

@@ -37,3 +37,11 @@ pub fn calculate_next_coordinates(max_tiles_from_center: u8, q: i32, r: i32) -> 
 
     return (q, r + 1);
 }
+
+// see https://www.redblobgames.com/grids/hexagons/#distances
+pub fn calculate_distance(current_q: i32, current_r: i32, destination_q: i32, destination_r: i32) -> i32 {
+    let current_s = -current_q - current_r;
+    let destination_s = -destination_q - destination_r;
+
+    ((current_q - destination_q).abs() + (current_r - destination_r).abs() + (current_s - destination_s)).abs() / 2
+}

@@ -14,6 +14,7 @@ pub fn initialize_game(ctx: Context<InitializeGame>, max_tiles_from_center: u8, 
     game_account.current_r = 0;
     game_account.cycle_time = cycle_time;
     game_account.cycles_per_period = cycles_per_period;
+    game_account.start_time = Clock::get().unwrap().unix_timestamp;
 
     Ok(())
 }
@@ -21,7 +22,7 @@ pub fn initialize_game(ctx: Context<InitializeGame>, max_tiles_from_center: u8, 
 #[derive(Accounts)]
 #[instruction(max_tiles_from_center: u8, cycle_time: i32, cycles_in_period: i32)]
 pub struct InitializeGame<'info> {
-    #[account(init, payer = signer, space = 8 + 32 + 4 + 4 + 1 + 32 + 1 + 4 + 4)]
+    #[account(init, payer = signer, space = 8 + 32 + 4 + 4 + 1 + 4 + 4 + 8 + 4 + 4)]
     pub game_account: Account<'info, GameAccount>,
 
     #[account(mut)]
@@ -39,6 +40,9 @@ pub struct GameAccount {
 
     pub current_q: i32,
     pub current_r: i32,
+
+    // important for keep cycle time in sync
+    pub start_time: i64,
 
     // this is the number of seconds in a cycle
     pub cycle_time: i32,

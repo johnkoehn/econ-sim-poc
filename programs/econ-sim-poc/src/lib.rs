@@ -3,10 +3,12 @@ use anchor_lang::prelude::*;
 pub mod game;
 pub mod tiles;
 pub mod workers;
+pub mod resource_mints;
 
 use game::*;
 use tiles::*;
 use workers::*;
+use resource_mints::*;
 
 declare_id!("5iUUMTJivwjNVUD4qqqdNuTnr79avJ76TuddrJvdwKXx");
 
@@ -31,6 +33,18 @@ pub mod econ_sim_poc {
 
     pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
         workers::complete_task(ctx)
+    }
+
+    pub fn create_resource_mint(ctx:Context<CreateResourceMint>, resource_type: ResourceTypes, mint_bump: u8, mint_seed: String) -> ProgramResult {
+        resource_mints::create_resource_mint(ctx, resource_type, mint_bump, mint_seed)
+    }
+
+    pub fn transport_resource(ctx: Context<TransportResource>) -> ProgramResult {
+        resource_mints::transport_resource(ctx)
+    }
+
+    pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, resource_mint_bump: u8, resource_mint_seed: String) -> ProgramResult {
+        resource_mints::compelete_transport_resource(ctx, resource_mint_bump, resource_mint_seed)
     }
 }
 

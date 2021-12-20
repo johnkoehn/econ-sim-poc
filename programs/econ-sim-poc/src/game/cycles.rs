@@ -32,3 +32,10 @@ pub fn calculate_capacity(tile_account: &TileAccount, game_account: &GameAccount
 
     (actual_capacity, new_cycle_time)
 }
+
+pub fn get_current_cycle_time(game_account: &GameAccount) -> i64 {
+    let seconds_passed = (Clock::get().unwrap().unix_timestamp - game_account.start_time) as u64;
+    let cycles_passed = seconds_passed / (game_account.cycle_time as u64);
+
+    return game_account.start_time + (cycles_passed as i64 * (game_account.cycle_time as i64));
+}

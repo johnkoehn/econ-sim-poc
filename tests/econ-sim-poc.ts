@@ -122,7 +122,7 @@ describe('econ-sim-poc', () => {
     });
 
     it('should throw an error if we try and create more than the max number of tiles set', async () => {
-      let errorMessage;
+      let hadError = false;
 
       try {
         const mintInfo = await createMintInfo(anchor, programId);
@@ -153,10 +153,10 @@ describe('econ-sim-poc', () => {
         })
       } catch (err) {
         console.log(err.msg);
-        errorMessage = err.msg;
+        hadError = true
       }
 
-      assert.ok(errorMessage === 'Max tiles minted');
+      assert.ok(hadError);
     });
   })
 
