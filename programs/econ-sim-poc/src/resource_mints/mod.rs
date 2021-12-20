@@ -93,14 +93,11 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
     let resource_token_account = &mut ctx.accounts.resource_token_account;
     let authority = &ctx.accounts.authority;
 
-    msg!("here");
     worker_ownership_checks(worker_account, worker_token_account, authority)?;
-    msg!("here2");
 
     if worker_account.task.is_none() {
         return Err(WorkerErrorCodes::WorkerHasNoTask.into());
     }
-    msg!("here3");
 
     let task = worker_account.task.as_ref().unwrap().clone();
     let current_time = Clock::get().unwrap().unix_timestamp;
@@ -108,7 +105,6 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
     if current_time < task.task_complete_time {
         return Err(WorkerErrorCodes::TaskNotComplete.into())
     }
-    msg!("here4");
 
     if task.task_type != TaskTypes::Transport {
         return Err(ResourceMintErrorCodes::MustBeTransportTask.into())

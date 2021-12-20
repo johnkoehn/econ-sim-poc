@@ -44,7 +44,6 @@ pub mod econ_sim_poc {
     }
 
     pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, resource_mint_bump: u8, resource_mint_seed: String) -> ProgramResult {
-        msg!("here");
         resource_mints::compelete_transport_resource(ctx, resource_mint_bump, resource_mint_seed)
     }
 }
