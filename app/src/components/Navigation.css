@@ -1,0 +1,8 @@
+.nav-button-spacing {
+    margin-right: 5px;
+}
+
+.nav-end-div {
+    display: flex;
+    float: right !important;
+}
