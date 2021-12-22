@@ -6,9 +6,9 @@ use anchor_spl::{
 };
 use spl_token;
 
-use crate::{tiles::{TileAccount, TileTypes, TileTokenAccount}, game::{GameAccount, cycles::calculate_capacity}};
+use crate::{tiles::{TileAccount, TileTypes, TileTokenAccount, tile_token_account_checks}, game::{GameAccount, cycles::calculate_capacity}};
 
-fn calculate_worker_capacity(level: u8) -> u64 {
+pub fn calculate_worker_capacity(level: u8) -> u64 {
     if level == 1 {
         return 1
     }
@@ -16,7 +16,7 @@ fn calculate_worker_capacity(level: u8) -> u64 {
     u64::pow(2, (level - 1) as u32)
 }
 
-fn worker_ownership_checks(worker_account: &Account<WorkerAccount>, worker_token_account: &Account<TokenAccount>, authority: &Signer) -> ProgramResult {
+pub fn worker_ownership_checks(worker_account: &Account<WorkerAccount>, worker_token_account: &Account<TokenAccount>, authority: &Signer) -> ProgramResult {
     if worker_account.mint_key != worker_token_account.mint.key() {
         return Err(WorkerErrorCodes::IncorrectTokenAccount.into())
     }
@@ -34,14 +34,15 @@ fn worker_ownership_checks(worker_account: &Account<WorkerAccount>, worker_token
 
 // here we are telling the rust complier, good day to you sir
 // we are returning a Skill reference from worker_account not tile_type
-fn get_worker_skill<'a>(tile_type: &TileTypes, skills: &'a mut Skills) -> (&'a mut Skill, TaskTypes) {
+pub fn get_worker_skill<'a>(tile_type: &TileTypes, skills: &'a mut Skills) -> (&'a mut Skill, TaskTypes) {
     match tile_type {
         TileTypes::Food => (&mut skills.farm, TaskTypes::Farm),
         TileTypes::Iron => (&mut skills.mine, TaskTypes::Mine),
         TileTypes::Coal => (&mut skills.mine, TaskTypes::Mine),
         TileTypes::Wood => (&mut skills.woodcutting, TaskTypes::Woodcutting),
         TileTypes::RareMetals => (&mut skills.mine, TaskTypes::Mine),
-        TileTypes::Herbs => (&mut skills.gather, TaskTypes::Gather)
+        TileTypes::Herbs => (&mut skills.gather, TaskTypes::Gather),
+        TileTypes::City => (&mut skills.transport, TaskTypes::Transport)
     }
 }
 
@@ -129,17 +130,19 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
         return Err(WorkerErrorCodes::WorkerHasTask.into())
     }
 
-    // does the tile have the capacity ?
     let tile_account = &mut ctx.accounts.tile_account;
     let game_account = &ctx.accounts.game_account;
+
+    if tile_account.tile_type == TileTypes::City {
+        return Err(WorkerErrorCodes::InvalidTileType.into())
+    }
 
     let (current_capacity, new_time) = calculate_capacity(tile_account, game_account);
 
     if current_capacity == 0 {
         return Err(WorkerErrorCodes::NoCapacity.into())
     }
-    // so we have the capacity
-    // we have time last updated
+
     let skills = &mut worker_account.skills;
     let (skill, task_type) = get_worker_skill(&tile_account.tile_type, skills);
     let worker_capacity = calculate_worker_capacity(skill.level);
@@ -191,14 +194,7 @@ pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
     // is tile token account new or not?
     if tile_token_account.is_initialized {
         // preform checks
-        if tile_token_account.owner != authority.key() {
-            return Err(WorkerErrorCodes::NotOwnerOfTileTokenAccount.into())
-        }
-
-        if tile_token_account.tile != tile_account.key() {
-            return Err(WorkerErrorCodes::WrongTileTokenAccount.into())
-        }
-
+        tile_token_account_checks(tile_token_account, tile_account, authority)?
     } else {
         // initialize account
         tile_token_account.owner = authority.key();
@@ -317,15 +313,15 @@ pub struct WorkerAccount {
 // 72
 #[derive(Debug, Clone, PartialEq, AnchorDeserialize, AnchorSerialize)]
 pub struct Skills {
-    farm: Skill,
-    mine: Skill,
-    woodcutting: Skill,
-    gather: Skill,
-    transport: Skill,
+    pub farm: Skill,
+    pub mine: Skill,
+    pub woodcutting: Skill,
+    pub gather: Skill,
+    pub transport: Skill,
     // city types (forge, market, alchamey, factory)
-    forge: Skill,
-    alchamey: Skill,
-    craft: Skill
+    pub forge: Skill,
+    pub alchamey: Skill,
+    pub craft: Skill
 }
 
 // 1 + 8 = 9
@@ -376,15 +372,12 @@ pub enum WorkerErrorCodes {
     #[msg("Task Not Complete")]
     TaskNotComplete,
 
-    #[msg("You are not the owner of this tile token account")]
-    NotOwnerOfTileTokenAccount,
-
-    #[msg("The tile token account is for a different tile")]
-    WrongTileTokenAccount,
-
     #[msg("Wrong tile for task")]
     WrongTile,
 
     #[msg("Tile has no capacity, please wait until resource are available")]
-    NoCapacity
+    NoCapacity,
+
+    #[msg("Invalid tile type for the task")]
+    InvalidTileType
 }
