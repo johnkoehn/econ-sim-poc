@@ -151,6 +151,7 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
         task.reward,
     )?;
 
+    // TODO -- we need to incoporate amount of tiles the worker went through
     worker_account.skills.transport.experience += task.reward;
     worker_account.task = None;
 
