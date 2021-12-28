@@ -6,7 +6,7 @@ use anchor_spl::{
 };
 use spl_token;
 
-use crate::{tiles::{TileAccount, TileTypes, TileTokenAccount, tile_token_account_checks}, game::{GameAccount, cycles::calculate_capacity}};
+use crate::{tiles::{TileAccount, TileTypes, TileTokenAccount, tile_token_account_checks, TileErrorCodes}, game::{GameAccount, cycles::calculate_capacity}};
 
 pub fn calculate_worker_capacity(level: u8) -> u64 {
     if level == 1 {
@@ -50,6 +50,7 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
     let worker = &mut ctx.accounts.worker_account;
     let worker_mint = &mut ctx.accounts.worker_mint;
 
+    worker.game_account = ctx.accounts.game_account.key();
     worker.owner = ctx.accounts.receiver.key();
     worker.mint_key = worker_mint.key();
     worker.q = 0;
@@ -133,6 +134,14 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     let tile_account = &mut ctx.accounts.tile_account;
     let game_account = &ctx.accounts.game_account;
 
+    if worker_account.game_account != game_account.key() {
+        return Err(WorkerErrorCodes::InvalidGameAccountForWorker.into());
+    }
+
+    if tile_account.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
+    }
+
     if tile_account.tile_type == TileTypes::City {
         return Err(WorkerErrorCodes::InvalidTileType.into())
     }
@@ -173,11 +182,20 @@ pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
     let authority = &ctx.accounts.authority;
     let tile_account = &mut ctx.accounts.tile_account;
     let tile_token_account = &mut ctx.accounts.tile_token_account;
+    let game_account = &ctx.accounts.game_account;
 
     worker_ownership_checks(worker_account, worker_token_account, authority)?;
 
     if worker_account.task.is_none() {
         return Err(WorkerErrorCodes::WorkerHasNoTask.into())
+    }
+
+    if worker_account.game_account != game_account.key() {
+        return Err(WorkerErrorCodes::InvalidGameAccountForWorker.into());
+    }
+
+    if tile_account.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
     }
 
     let current_time = Clock::get().unwrap().unix_timestamp;
@@ -219,8 +237,10 @@ pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
 #[derive(Accounts)]
 #[instruction(worker_mint_bump: u8, worker_mint_seed: String)]
 pub struct MintWorker<'info> {
-    #[account(init, payer=authority, space = 8 + 32 + 32 + 4 + 4 + 72 + 50)]
+    #[account(init, payer=authority, space = 8 + 32 + 32 + 32 + 4 + 4 + 72 + 50)]
     pub worker_account: Account<'info, WorkerAccount>,
+
+    pub game_account: Account<'info, GameAccount>,
 
     #[account(
         init,
@@ -283,6 +303,8 @@ pub struct CompleteTask<'info> {
     pub worker_account: Account<'info, WorkerAccount>,
     pub worker_token_account: Account<'info, TokenAccount>,
 
+    pub game_account: Account<'info, GameAccount>,
+
     #[account(mut)]
     pub tile_account: Account<'info, TileAccount>,
 
@@ -294,9 +316,11 @@ pub struct CompleteTask<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
-// 32 + 32 + 4 + 4 + 72 + 50
+// 32 + 32 + 32 + 4 + 4 + 72 + 50
 #[account]
 pub struct WorkerAccount {
+    pub game_account: Pubkey,
+
     // makes look up quicker but a user must always present actual proof throught NFT
     pub owner: Pubkey,
     pub mint_key: Pubkey,
@@ -354,6 +378,9 @@ pub enum TaskTypes {
 
 #[error]
 pub enum WorkerErrorCodes {
+    #[msg("Invalid Game Account for Worker")]
+    InvalidGameAccountForWorker,
+
     #[msg("You do not own the worker")]
     NotWorkerOwner,
 

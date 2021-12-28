@@ -7,30 +7,13 @@ import { nanoid } from 'nanoid';
 import { EconSimPoc, IDL } from '../target/types/econ_sim_poc';
 import createMintInfo from './util/createMintInfo';
 import getRandomTileType from './util/getRandomTileType';
+import tileTypes from './types/tileTypes';
+import resourceTypes from './types/resourceTypes';
 
 const testKey1Info = require('./testKeys/testKey.json');
 const testKey2Info = require('./testKeys/testKey2.json');
 const testKey1 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey1Info));
 const testKey2 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey2Info));
-
-const tileTypes = {
-  '0': { food: {} },
-  '1': { iron: {} },
-  '2': { coal: {} },
-  '3': { wood: {} },
-  '4': { rareMetals: {} },
-  '5': { herbs: {} },
-  '6': { city: {} }
-}
-
-const resourceTypes = {
-  '0': { food: {} },
-  '1': { iron: {} },
-  '2': { coal: {} },
-  '3': { wood: {} },
-  '4': { rareMetals: {} },
-  '5': { herbs: {} }
-}
 
 describe('econ-sim-poc', () => {
 
@@ -229,6 +212,7 @@ describe('econ-sim-poc', () => {
 
       await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
         accounts: {
+          gameAccount: gameAccountKey.publicKey,
           workerAccount: workerAccountKey.publicKey,
           workerTokenAccount: workerTokenAccount,
           workerMint: mintInfo.mint,
@@ -260,6 +244,7 @@ describe('econ-sim-poc', () => {
 
       await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
         accounts: {
+          gameAccount: gameAccountKey.publicKey,
           workerAccount: testWorkerAccountKey.publicKey,
           workerTokenAccount: testWorkerTokenAccount,
           workerMint: mintInfo.mint,
@@ -333,6 +318,7 @@ describe('econ-sim-poc', () => {
       try {
         await program.rpc.completeTask({
           accounts: {
+            gameAccount: gameAccountKey.publicKey,
             tileTokenAccount: tileTokenAccountKey.publicKey,
             workerAccount: testWorkerAccountKey.publicKey,
             workerTokenAccount: testWorkerTokenAccount,
@@ -359,6 +345,7 @@ describe('econ-sim-poc', () => {
       try {
         await program.rpc.completeTask({
           accounts: {
+            gameAccount: gameAccountKey.publicKey,
             tileTokenAccount: tileTokenAccountKey.publicKey,
             workerAccount: testWorkerAccountKey.publicKey,
             workerTokenAccount: testWorkerTokenAccount,
@@ -385,6 +372,7 @@ describe('econ-sim-poc', () => {
       try {
         await program.rpc.completeTask({
           accounts: {
+            gameAccount: gameAccountKey.publicKey,
             tileTokenAccount: officalTileTokenAccountKey.publicKey,
             workerAccount: testWorkerAccountKey.publicKey,
             workerTokenAccount: testWorkerTokenAccount,
