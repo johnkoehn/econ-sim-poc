@@ -15,7 +15,7 @@ const testKey2Info = require('./testKeys/testKey2.json');
 const testKey1 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey1Info));
 const testKey2 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey2Info));
 
-describe('econ-sim-poc', () => {
+describe.skip('econ-sim-poc', () => {
 
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.Provider.env());
