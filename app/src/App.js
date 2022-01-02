@@ -16,7 +16,9 @@ import {
 import { clusterApiUrl } from '@solana/web3.js';
 
 import Navigation from './components/Navigation';
+import Game from './game/Game';
 import './App.css';
+import { EconSimProvider } from './providers/EconSimProvider';
 
 // Default styles that can be overridden by your app
 require('@solana/wallet-adapter-react-ui/styles.css');
@@ -49,7 +51,10 @@ const App = () => {
         <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} autoConnect>
                 <WalletModalProvider>
-                    <Navigation />
+                    <EconSimProvider>
+                        <Navigation />
+                        <Game />
+                    </EconSimProvider>
                 </WalletModalProvider>
             </WalletProvider>
         </ConnectionProvider>

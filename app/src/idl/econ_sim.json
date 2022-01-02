@@ -1,0 +1,953 @@
+{
+  "version": "0.1.0",
+  "name": "econ_sim_poc",
+  "instructions": [
+    {
+      "name": "initializeGame",
+      "accounts": [
+        {
+          "name": "gameAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "maxTilesFromCenter",
+          "type": "u8"
+        },
+        {
+          "name": "cycleTime",
+          "type": "i32"
+        },
+        {
+          "name": "cyclesInPeriod",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "mintTile",
+      "accounts": [
+        {
+          "name": "tileAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tileMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tileTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "tileType",
+          "type": {
+            "defined": "TileTypes"
+          }
+        },
+        {
+          "name": "tileMintBump",
+          "type": "u8"
+        },
+        {
+          "name": "tileMintSeed",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "mintWorker",
+      "accounts": [
+        {
+          "name": "workerAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "workerMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "workerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "workerMintBump",
+          "type": "u8"
+        },
+        {
+          "name": "workerMintSeed",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "assignTask",
+      "accounts": [
+        {
+          "name": "workerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "workerTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tileAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "gameAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "completeTask",
+      "accounts": [
+        {
+          "name": "tileTokenAccount",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "workerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "workerTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "gameAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tileAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "createResourceMint",
+      "accounts": [
+        {
+          "name": "resourceMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "resourceInfo",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "gameAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "resourceType",
+          "type": {
+            "defined": "ResourceTypes"
+          }
+        },
+        {
+          "name": "mintBump",
+          "type": "u8"
+        },
+        {
+          "name": "mintSeed",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "transportResource",
+      "accounts": [
+        {
+          "name": "gameAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "startTile",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "destinationTile",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tileTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "workerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "workerTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "compeleteTransportResource",
+      "accounts": [
+        {
+          "name": "gameAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "startTile",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "destinationTile",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "workerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "workerTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "resourceInfo",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "resourceTokenMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "resourceTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "resourceMintBump",
+          "type": "u8"
+        },
+        {
+          "name": "resourceMintSeed",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GameAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "maxTiles",
+            "type": "u32"
+          },
+          {
+            "name": "currentNumberOfTiles",
+            "type": "u32"
+          },
+          {
+            "name": "maxTilesFromCenter",
+            "type": "u8"
+          },
+          {
+            "name": "currentQ",
+            "type": "i32"
+          },
+          {
+            "name": "currentR",
+            "type": "i32"
+          },
+          {
+            "name": "startTime",
+            "type": "i64"
+          },
+          {
+            "name": "cycleTime",
+            "type": "i32"
+          },
+          {
+            "name": "cyclesPerPeriod",
+            "type": "i32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResourceInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gameAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "resourceType",
+            "type": {
+              "defined": "ResourceTypes"
+            }
+          },
+          {
+            "name": "mintKey",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TileAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gameAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "mintKey",
+            "type": "publicKey"
+          },
+          {
+            "name": "tileType",
+            "type": {
+              "defined": "TileTypes"
+            }
+          },
+          {
+            "name": "q",
+            "type": "i32"
+          },
+          {
+            "name": "r",
+            "type": "i32"
+          },
+          {
+            "name": "level",
+            "type": "u8"
+          },
+          {
+            "name": "taxPercent",
+            "type": "u8"
+          },
+          {
+            "name": "minWorkerLevel",
+            "type": "u8"
+          },
+          {
+            "name": "capacity",
+            "type": "u64"
+          },
+          {
+            "name": "lastCycleTime",
+            "type": "i64"
+          },
+          {
+            "name": "resourcesOwedToOwnerBy10",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TileTokenAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "isInitialized",
+            "type": "bool"
+          },
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "tile",
+            "type": "publicKey"
+          },
+          {
+            "name": "resources",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WorkerAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gameAccount",
+            "type": "publicKey"
+          },
+          {
+            "name": "owner",
+            "type": "publicKey"
+          },
+          {
+            "name": "mintKey",
+            "type": "publicKey"
+          },
+          {
+            "name": "q",
+            "type": "i32"
+          },
+          {
+            "name": "r",
+            "type": "i32"
+          },
+          {
+            "name": "skills",
+            "type": {
+              "defined": "Skills"
+            }
+          },
+          {
+            "name": "task",
+            "type": {
+              "option": {
+                "defined": "Task"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Skills",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "farm",
+            "type": {
+              "defined": "Skill"
+            }
+          },
+          {
+            "name": "mine",
+            "type": {
+              "defined": "Skill"
+            }
+          },
+          {
+            "name": "woodcutting",
+            "type": {
+              "defined": "Skill"
+            }
+          },
+          {
+            "name": "gather",
+            "type": {
+              "defined": "Skill"
+            }
+          },
+          {
+            "name": "transport",
+            "type": {
+              "defined": "Skill"
+            }
+          },
+          {
+            "name": "forge",
+            "type": {
+              "defined": "Skill"
+            }
+          },
+          {
+            "name": "alchamey",
+            "type": {
+              "defined": "Skill"
+            }
+          },
+          {
+            "name": "craft",
+            "type": {
+              "defined": "Skill"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Skill",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "level",
+            "type": "u8"
+          },
+          {
+            "name": "experience",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Task",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tileKey",
+            "type": "publicKey"
+          },
+          {
+            "name": "taskType",
+            "type": {
+              "defined": "TaskTypes"
+            }
+          },
+          {
+            "name": "taskCompleteTime",
+            "type": "i64"
+          },
+          {
+            "name": "reward",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResourceTypes",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Food"
+          },
+          {
+            "name": "Iron"
+          },
+          {
+            "name": "Coal"
+          },
+          {
+            "name": "Wood"
+          },
+          {
+            "name": "RareMetals"
+          },
+          {
+            "name": "Herbs"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TileTypes",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Food"
+          },
+          {
+            "name": "Iron"
+          },
+          {
+            "name": "Coal"
+          },
+          {
+            "name": "Wood"
+          },
+          {
+            "name": "RareMetals"
+          },
+          {
+            "name": "Herbs"
+          },
+          {
+            "name": "City"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TileErrorCodes",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "InvalidGameAccountForTile"
+          },
+          {
+            "name": "MaxTiles"
+          },
+          {
+            "name": "NotGameMaster"
+          },
+          {
+            "name": "NotOwnerOfTileTokenAccount"
+          },
+          {
+            "name": "WrongTileTokenAccount"
+          },
+          {
+            "name": "NoResources"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TaskTypes",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Farm"
+          },
+          {
+            "name": "Mine"
+          },
+          {
+            "name": "Woodcutting"
+          },
+          {
+            "name": "Gather"
+          },
+          {
+            "name": "Transport"
+          },
+          {
+            "name": "Forge"
+          },
+          {
+            "name": "Alchamey"
+          },
+          {
+            "name": "Craft"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WorkerErrorCodes",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "InvalidGameAccountForWorker"
+          },
+          {
+            "name": "NotWorkerOwner"
+          },
+          {
+            "name": "IncorrectTokenAccount"
+          },
+          {
+            "name": "NotTokenAccountOwner"
+          },
+          {
+            "name": "WorkerHasTask"
+          },
+          {
+            "name": "WorkerHasNoTask"
+          },
+          {
+            "name": "TaskNotComplete"
+          },
+          {
+            "name": "WrongTile"
+          },
+          {
+            "name": "NoCapacity"
+          },
+          {
+            "name": "InvalidTileType"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidGameAccountForResourceMint",
+      "msg": "Invalid Game Account for Resoure Mint"
+    },
+    {
+      "code": 6001,
+      "name": "DestinationTileMustBeCity",
+      "msg": "Destination tile must be a city"
+    },
+    {
+      "code": 6002,
+      "name": "MustBeTransportTask",
+      "msg": "Must be transport task"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidResourceMint",
+      "msg": "Invalid Resource Mint"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidResourceType",
+      "msg": "Invalid Resource Type"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidResourceMintForTask",
+      "msg": "Invalid resource mint for the given task"
+    }
+  ],
+  "metadata": {
+    "address": "5iUUMTJivwjNVUD4qqqdNuTnr79avJ76TuddrJvdwKXx"
+  }
+}
