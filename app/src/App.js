@@ -16,7 +16,7 @@ import {
 import { clusterApiUrl } from '@solana/web3.js';
 
 import Navigation from './components/Navigation';
-import Game from './game/Game';
+import Game from './components/game/Game';
 import './App.css';
 import { EconSimProvider } from './providers/EconSimProvider';
 

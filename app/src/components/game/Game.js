@@ -2,8 +2,8 @@ import React from 'react';
 import { Container } from 'react-bootstrap';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { HexGrid, Layout } from 'react-hexgrid';
-import { useEconSim } from '../providers/EconSimProvider';
-import Loading from '../components/util/Loading';
+import { useEconSim } from '../../providers/EconSimProvider';
+import Loading from '../util/Loading';
 import Tiles from './tiles/Tiles';
 
 const Game = () => {

@@ -6,3 +6,11 @@
     display: flex;
     float: right !important;
 }
+
+.nav-bar-text {
+    color: white !important;
+}
+
+.nav-bar-text:hover {
+    color: grey !important;
+}

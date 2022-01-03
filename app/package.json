@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@project-serum/anchor": "^0.19.1-beta.1",
+    "@solana/spl-token": "^0.1.8",
     "@solana/wallet-adapter-base": "^0.8.1",
     "@solana/wallet-adapter-react": "^0.14.1",
     "@solana/wallet-adapter-react-ui": "^0.7.0",
@@ -17,6 +18,7 @@
     "eslint-config-react-important-stuff": "^3.0.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-react": "^7.27.1",
+    "nanoid": "^3.1.30",
     "react": "^17.0.2",
     "react-bootstrap": "^2.0.4",
     "react-dom": "^17.0.2",

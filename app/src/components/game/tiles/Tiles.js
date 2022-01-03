@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEconSim } from '../../providers/EconSimProvider';
+import { useEconSim } from '../../../providers/EconSimProvider';
 import Tile from './Tile';
 
 const Tiles = () => {

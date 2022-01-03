@@ -62,15 +62,33 @@ const EconSimProvider = ({ children }) => {
         setTilesOwned(tilesPlayerOwns);
 
         const allWorkers = await newProgram.account.workerAccount.all();
+        console.log(allWorkers);
+
         const playerOwnedWorkers = allWorkers.filter((x) => x.account.owner.toString() === playerPublicKey);
         setWorkers(playerOwnedWorkers);
 
         setIsLoading(false);
     }, [wallet.connected]);
 
+    // make sure it is passed as  { publicKey, account: workerAccount }
+    const addWorker = (worker) => {
+        setWorkers([...workers, worker]);
+    };
+
     const value = useMemo(() => {
-        return { tiles, provider, program, gameAccount, tilesOwned, workers, isLoading };
-    }, [isLoading]);
+        return {
+            tiles,
+            provider,
+            programId,
+            program,
+            gameAccount,
+            gameAccountKey: new web3.PublicKey(process.env.REACT_APP_GAME_ID),
+            tilesOwned,
+            workers,
+            isLoading,
+            addWorker
+        };
+    }, [isLoading, workers]);
 
     return (
         <EconSimContext.Provider value={value}>
