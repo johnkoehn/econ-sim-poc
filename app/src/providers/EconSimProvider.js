@@ -1,5 +1,5 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Commitment, Connection, PublicKey } from '@solana/web3.js';
+import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Program, Provider, web3 } from '@project-serum/anchor';
 
@@ -68,7 +68,10 @@ const EconSimProvider = ({ children }) => {
         setIsLoading(false);
     }, [wallet.connected]);
 
-    const value = { tiles, provider, program, gameAccount, tilesOwned, workers, isLoading };
+    const value = useMemo(() => {
+        return { tiles, provider, program, gameAccount, tilesOwned, workers, isLoading };
+    }, [isLoading]);
+
     return (
         <EconSimContext.Provider value={value}>
             {children}

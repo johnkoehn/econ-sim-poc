@@ -21,7 +21,7 @@ const Tiles = () => {
 
         // TODO -- add if they own the tile or not
         if (selectedTile && selectedTile.q === account.q && selectedTile.r === account.r) {
-            return <Tile tile={account} selected onSelect={onTileSelect} onUnselect={onTileUnselect} />;
+            return <Tile key={account.mintKey.toString()} tile={account} selected onSelect={onTileSelect} onUnselect={onTileUnselect} />;
         }
 
         return <Tile key={account.mintKey.toString()} tile={account} onSelect={onTileSelect} onUnselect={onTileUnselect} />;

@@ -26,8 +26,8 @@ const Game = () => {
 
     return (
         <Container fluid>
-            <HexGrid width={1000} height={1000} viewBox="-50 -10 100 100">
-                <Layout size={{ x: 1, y: 1 }} flat spacing={1.1} origin={{ x: 0, y: 0 }}>
+            <HexGrid width={1000} height={1000}>
+                <Layout size={{ x: 6, y: 6 }} flat={false} spacing={1.1} origin={{ x: 0, y: 0 }}>
                     <Tiles />
                 </Layout>
             </HexGrid>
