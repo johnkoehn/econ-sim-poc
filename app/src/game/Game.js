@@ -1,12 +1,16 @@
 import React from 'react';
 import { Container } from 'react-bootstrap';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { HexGrid, Layout } from 'react-hexgrid';
+import { useEconSim } from '../providers/EconSimProvider';
 import Loading from '../components/util/Loading';
+import Tiles from './tiles/Tiles';
 
 const Game = () => {
     const walletInfo = useWallet();
+    const gameData = useEconSim();
 
-    if (walletInfo.connecting || walletInfo.disconnecting) {
+    if (gameData.isLoading || walletInfo.connecting || walletInfo.disconnecting) {
         return (
             <Loading />
         );
@@ -22,6 +26,11 @@ const Game = () => {
 
     return (
         <Container fluid>
+            <HexGrid width={1000} height={1000} viewBox="-50 -10 100 100">
+                <Layout size={{ x: 1, y: 1 }} flat spacing={1.1} origin={{ x: 0, y: 0 }}>
+                    <Tiles />
+                </Layout>
+            </HexGrid>
             <p>Connected</p>
         </Container>
     );

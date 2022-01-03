@@ -31,6 +31,7 @@ const EconSimProvider = ({ children }) => {
     const [gameAccount, setGameAccount] = useState(undefined);
     const [workers, setWorkers] = useState(undefined);
     const [tilesOwned, setTilesOwned] = useState(undefined);
+    const [isLoading, setIsLoading] = useState(true);
 
     const wallet = useWallet();
 
@@ -50,7 +51,6 @@ const EconSimProvider = ({ children }) => {
         const gameAccountInfo = await newProgram.account.gameAccount.fetch(gameAccountKey);
         setGameAccount(gameAccountInfo);
 
-        console.log(newProgram.account);
         const currentTiles = await newProgram.account.tileAccount.all();
 
         const tilesForGame = currentTiles.filter((x) => x.account.gameAccount.toString() === gameAccountKey.toString());
@@ -64,9 +64,11 @@ const EconSimProvider = ({ children }) => {
         const allWorkers = await newProgram.account.workerAccount.all();
         const playerOwnedWorkers = allWorkers.filter((x) => x.account.owner.toString() === playerPublicKey);
         setWorkers(playerOwnedWorkers);
+
+        setIsLoading(false);
     }, [wallet.connected]);
 
-    const value = { tiles, provider, program, gameAccount, tilesOwned, workers };
+    const value = { tiles, provider, program, gameAccount, tilesOwned, workers, isLoading };
     return (
         <EconSimContext.Provider value={value}>
             {children}
