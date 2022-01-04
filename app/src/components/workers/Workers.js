@@ -1,11 +1,12 @@
 import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Offcanvas, Row, Button, Col } from 'react-bootstrap';
+import { Offcanvas, Row, Button, Col, Accordion } from 'react-bootstrap';
 import * as spl from '@solana/spl-token';
 import { web3 } from '@project-serum/anchor';
 import { useEconSim } from '../../providers/EconSimProvider';
 import Loading from '../util/Loading';
 import createMintInfo from '../../util/createMintInfo';
+import Worker from './Worker';
 
 const Workers = ({ showWorkers, onClose }) => {
     const wallet = useWallet();
@@ -35,6 +36,7 @@ const Workers = ({ showWorkers, onClose }) => {
     }
 
     const mintWorker = async () => {
+        // TODO -- handle error
         const { gameAccountKey, program, programId, addWorker } = gameData;
         const mintInfo = await createMintInfo(programId);
 
@@ -73,6 +75,16 @@ const Workers = ({ showWorkers, onClose }) => {
             `You have ${gameData.workers.length} workers`;
     };
 
+    const buildWorkerRows = () => {
+        return gameData.workers.map(({ account }, index) => {
+            return (
+                <Accordion alwaysOpen>
+                    <Worker worker={account} workerName={`Worker ${index}`} />
+                </Accordion>
+            );
+        });
+    };
+
     return (
         <Offcanvas placement="end" show={showWorkers} onHide={onClose}>
             <Offcanvas.Header closeButton>
@@ -90,6 +102,7 @@ const Workers = ({ showWorkers, onClose }) => {
                     </Col>
                     <Col />
                 </Row>
+                {buildWorkerRows()}
             </Offcanvas.Body>
         </Offcanvas>
     );
