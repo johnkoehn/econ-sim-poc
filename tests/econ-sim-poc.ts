@@ -33,6 +33,7 @@ describe.skip('econ-sim-poc', () => {
 
   describe('Tiles', () => {
     it('It should initialize the game', async () => {
+      console.log(program.provider.wallet.publicKey.toString());
       await program.rpc.initializeGame(1, 1, 8, {
         accounts: {
           gameAccount: gameAccountKey.publicKey,
@@ -442,7 +443,7 @@ describe.skip('econ-sim-poc', () => {
       console.log(resourceTokenAccount);
 
       await setTimeout(2000);
-      await program.rpc.compeleteTransportResource(resourceMintInfo.mintBump, resourceMintInfo.seed, {
+      await program.rpc.completeTransportResource(resourceMintInfo.mintBump, resourceMintInfo.seed, {
         accounts: {
           gameAccount: gameAccountKey.publicKey,
           startTile: tileAccountKey.publicKey,

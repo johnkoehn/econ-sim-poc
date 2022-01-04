@@ -21,7 +21,8 @@ const provider = program.provider;
 const id = nanoid(4);
 const gameAccountKey = web3.Keypair.generate();
 
-const uiAccount = new web3.PublicKey('bgEUZT6TdrRB1oRE9QtKEKjZXTksq2afeHqPRZeoTEq')
+// const uiAccount = new web3.PublicKey('bgEUZT6TdrRB1oRE9QtKEKjZXTksq2afeHqPRZeoTEq')
+const uiAccount = new web3.PublicKey('4gf27XqAFNokyB3mQNUEfPuVp32Nvb5427GvFMN63r5p')
 
 describe('Setup testing environment for the UI', () => {
     it('should create the game', async () => {

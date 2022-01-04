@@ -16,6 +16,19 @@ pub fn calculate_worker_capacity(level: u8) -> u64 {
     u64::pow(2, (level - 1) as u32)
 }
 
+pub fn calculate_skill_level(current_level: u8, experience: u64) -> u8 {
+    if current_level == std::u8::MAX {
+        return current_level
+    }
+
+    let exp_to_next_level: u64 = u64::pow(3, (current_level + 1) as u32);
+    if experience >=  exp_to_next_level {
+        return current_level + 1
+    }
+
+    return current_level
+}
+
 pub fn worker_ownership_checks(worker_account: &Account<WorkerAccount>, worker_token_account: &Account<TokenAccount>, authority: &Signer) -> ProgramResult {
     if worker_account.mint_key != worker_token_account.mint.key() {
         return Err(WorkerErrorCodes::IncorrectTokenAccount.into())
@@ -81,7 +94,7 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
             level: 1,
             experience: 0
         },
-        alchamey: Skill {
+        alchemy: Skill {
             level: 1,
             experience: 0
         },
@@ -229,6 +242,8 @@ pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
     let result = get_worker_skill(&tile_account.tile_type, skills);
     let skill = result.0;
     skill.experience += task.reward;
+    skill.level = calculate_skill_level(skill.level, skill.experience);
+
     worker_account.task = None;
 
     Ok(())
@@ -342,9 +357,9 @@ pub struct Skills {
     pub woodcutting: Skill,
     pub gather: Skill,
     pub transport: Skill,
-    // city types (forge, market, alchamey, factory)
+    // city types (forge, market, alchemy, factory)
     pub forge: Skill,
-    pub alchamey: Skill,
+    pub alchemy: Skill,
     pub craft: Skill
 }
 
@@ -372,7 +387,7 @@ pub enum TaskTypes {
     Gather = 3,
     Transport = 4,
     Forge = 5,
-    Alchamey = 6,
+    Alchemy = 6,
     Craft = 7
 }
 
