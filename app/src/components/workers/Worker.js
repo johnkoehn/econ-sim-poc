@@ -1,7 +1,6 @@
 import React from 'react';
 import { Accordion } from 'react-bootstrap';
 import Skill from './Skill';
-import Workers from './Workers';
 
 const Worker = ({ worker, workerName }) => {
     console.log(worker);
