@@ -1,29 +1,42 @@
 import React from 'react';
-import { ProgressBar } from 'react-bootstrap';
+import { ProgressBar, Row } from 'react-bootstrap';
+import './Skill.css';
 
 const capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);
 };
+
+const getExperienceNeeded = (currentLevel) => 3 ** (currentLevel + 1);
 
 const calculateProgressToNextLevel = (currentLevel, experience) => {
     if (experience === 0) {
         return 0;
     }
 
-    const experienceNeeded = 3 ** (currentLevel + 1);
+    const experienceNeeded = getExperienceNeeded(currentLevel);
 
     return (experience / experienceNeeded) * 100;
 };
 
 const Skill = ({ skillName, skillInfo }) => {
-    const progress = calculateProgressToNextLevel(skillInfo.level, skillInfo.experience.toString());
+    const level = skillInfo.level;
+    const experience = skillInfo.experience.toString();
+
+    const progress = calculateProgressToNextLevel(level, experience);
 
     return (
-        <>
-            <p>{capitalizeFirstLetter(skillName)}:</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;Level: {skillInfo.level}</p>
-            <p>&nbsp;&nbsp;&nbsp;&nbsp;Experience: <ProgressBar variant="info" now={progress} /></p>
-        </>
+        <div className="skill-space">
+            <Row>{capitalizeFirstLetter(skillName)}:</Row>
+            <Row>&nbsp;&nbsp;&nbsp;&nbsp;Level: {level}</Row>
+            <Row>&nbsp;&nbsp;&nbsp;&nbsp;Experience: {`${experience}/${getExperienceNeeded(level)}`}</Row>
+            <Row>
+                <ProgressBar
+                    variant="info"
+                    now={progress}
+                    label={`${progress}%`}
+                />
+            </Row>
+        </div>
     );
 };
 
