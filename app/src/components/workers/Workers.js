@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Offcanvas, Row, Button, Col, Accordion } from 'react-bootstrap';
 import * as spl from '@solana/spl-token';
@@ -6,9 +6,11 @@ import { web3 } from '@project-serum/anchor';
 import { useEconSim } from '../../providers/EconSimProvider';
 import Loading from '../util/Loading';
 import createMintInfo from '../../util/createMintInfo';
+import Error from '../util/Error';
 import Worker from './Worker';
 
 const Workers = ({ showWorkers, onClose }) => {
+    const [error, setError] = useState('');
     const wallet = useWallet();
     const gameData = useEconSim();
 
@@ -36,7 +38,7 @@ const Workers = ({ showWorkers, onClose }) => {
     }
 
     const mintWorker = async () => {
-        // TODO -- handle error
+        setError('');
         const { gameAccountKey, program, programId, addWorker } = gameData;
         const mintInfo = await createMintInfo(programId);
 
@@ -48,21 +50,26 @@ const Workers = ({ showWorkers, onClose }) => {
             wallet.publicKey
         );
 
-        await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
-            accounts: {
-                gameAccount: gameAccountKey,
-                workerAccount: workerAccountKey.publicKey,
-                workerTokenAccount,
-                workerMint: mintInfo.mint,
-                authority: wallet.publicKey,
-                receiver: wallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
-                tokenProgram: spl.TOKEN_PROGRAM_ID,
-                associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-                rent: web3.SYSVAR_RENT_PUBKEY
-            },
-            signers: [workerAccountKey]
-        });
+        try {
+            await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
+                accounts: {
+                    gameAccount: gameAccountKey,
+                    workerAccount: workerAccountKey.publicKey,
+                    workerTokenAccount,
+                    workerMint: mintInfo.mint,
+                    authority: wallet.publicKey,
+                    receiver: wallet.publicKey,
+                    systemProgram: web3.SystemProgram.programId,
+                    tokenProgram: spl.TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+                    rent: web3.SYSVAR_RENT_PUBKEY
+                },
+                signers: [workerAccountKey]
+            });
+        } catch (err) {
+            setError(`Failed to mint worker, received message: ${err.message}`);
+            return;
+        }
 
         const workerInfo = await program.account.workerAccount.fetch(workerAccountKey.publicKey);
 
@@ -91,6 +98,11 @@ const Workers = ({ showWorkers, onClose }) => {
                 <Offcanvas.Title>Workers</Offcanvas.Title>
             </Offcanvas.Header>
             <Offcanvas.Body>
+                <Row>
+                    <Col>
+                        <Error message={error} />
+                    </Col>
+                </Row>
                 <Row>
                     <Col>
                         {getWorkerNumber()}
