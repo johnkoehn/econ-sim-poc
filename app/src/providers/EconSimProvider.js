@@ -75,6 +75,22 @@ const EconSimProvider = ({ children }) => {
         setWorkers([...workers, worker]);
     };
 
+    const refreshWorker = async (workerToRefresh) => {
+        const updatedWorker = await program.account.workerAccount.fetch(workerToRefresh.publicKey);
+
+        const updatedWorkers = workers.map((worker) => {
+            if (worker.publicKey.toString() === workerToRefresh.publicKey.toString()) {
+                return {
+                    publicKey: workerToRefresh.publicKey,
+                    account: updatedWorker
+                };
+            }
+            return worker;
+        });
+
+        setWorkers(updatedWorkers);
+    };
+
     const value = useMemo(() => {
         return {
             tiles,
@@ -86,7 +102,8 @@ const EconSimProvider = ({ children }) => {
             tilesOwned,
             workers,
             isLoading,
-            addWorker
+            addWorker,
+            refreshWorker
         };
     }, [isLoading, workers]);
 

@@ -3,10 +3,6 @@ import { ProgressBar, Row } from 'react-bootstrap';
 import './Skill.css';
 import skillTypesMapping from './skillTypesMapping';
 
-const capitalizeFirstLetter = (string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-};
-
 const getExperienceNeeded = (currentLevel) => 3 ** (currentLevel + 1);
 
 const calculateProgressToNextLevel = (currentLevel, experience) => {
@@ -34,7 +30,7 @@ const Skill = ({ skillName, skillInfo }) => {
                 <ProgressBar
                     variant="info"
                     now={progress}
-                    label={`${progress}%`}
+                    label={`${Math.floor(progress)}%`}
                 />
             </Row>
         </div>

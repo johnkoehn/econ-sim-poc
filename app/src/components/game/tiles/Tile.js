@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Offcanvas, Row, Col, Dropdown } from 'react-bootstrap';
+import { Offcanvas, Row, Col } from 'react-bootstrap';
 import Hexagon from 'react-hexgrid/lib/Hexagon/Hexagon';
 import { useWallet } from '@solana/wallet-adapter-react';
 import * as spl from '@solana/spl-token';
@@ -13,7 +13,7 @@ import SelectWorkerDropdown from '../../workers/SelectWorkerDropdown';
 const Tile = ({ tile, onSelect, onUnselect, selected }) => {
     // tile data is information not directly stored in the account such as current capacity
     const [tileData, setTileData] = useState(undefined);
-    const { gameAccount, gameAccountKey, program } = useEconSim();
+    const { gameAccount, gameAccountKey, program, refreshWorker } = useEconSim();
     const wallet = useWallet();
 
     const tileAccount = tile.account;
@@ -49,7 +49,6 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
     };
 
     const assignWorker = async (worker) => {
-        console.log(worker);
         const workerTokenAccount = await spl.Token.getAssociatedTokenAddress(
             spl.ASSOCIATED_TOKEN_PROGRAM_ID,
             spl.TOKEN_PROGRAM_ID,
@@ -70,6 +69,8 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
             },
             signers: []
         });
+
+        await refreshWorker(worker);
     };
 
     const buildTileData = () => {

@@ -83,10 +83,10 @@ const Workers = ({ showWorkers, onClose }) => {
     };
 
     const buildWorkerRows = () => {
-        return gameData.workers.map(({ account }, index) => {
+        return gameData.workers.map((worker, index) => {
             return (
-                <Accordion>
-                    <Worker worker={account} workerName={`Worker ${index}`} />
+                <Accordion key={worker.publicKey.toString()}>
+                    <Worker worker={worker} workerName={`Worker ${index}`} />
                 </Accordion>
             );
         });
