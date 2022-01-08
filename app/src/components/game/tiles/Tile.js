@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Offcanvas, Row, Col } from 'react-bootstrap';
+import { Offcanvas, Row, Col, Dropdown } from 'react-bootstrap';
 import Hexagon from 'react-hexgrid/lib/Hexagon/Hexagon';
+import { useWallet } from '@solana/wallet-adapter-react';
+import * as spl from '@solana/spl-token';
+import { web3 } from '@project-serum/anchor';
 import './Tile.css';
 import tileTypesMapping from './tileTypesMapping';
 import { useEconSim } from '../../../providers/EconSimProvider';
 import { calculateCapacity } from '../../../gameLogic/tileMath';
+import SelectWorkerDropdown from '../../workers/SelectWorkerDropdown';
 
 const Tile = ({ tile, onSelect, onUnselect, selected }) => {
     // tile data is information not directly stored in the account such as current capacity
     const [tileData, setTileData] = useState(undefined);
-    const { gameAccount } = useEconSim();
-    const tileTypeInfo = tileTypesMapping[Object.keys(tile.tileType)[0]];
+    const { gameAccount, gameAccountKey, program } = useEconSim();
+    const wallet = useWallet();
+
+    const tileAccount = tile.account;
+    const tileTypeInfo = tileTypesMapping[Object.keys(tileAccount.tileType)[0]];
 
     useEffect(() => {
         if (tileData) {
@@ -18,7 +25,7 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
         }
 
         setTileData({
-            capacity: calculateCapacity(tile, gameAccount)
+            capacity: calculateCapacity(tileAccount, gameAccount)
         });
     }, [tileData]);
 
@@ -36,9 +43,33 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
 
     const handleOnClick = () => {
         setTileData({
-            capacity: calculateCapacity(tile, gameAccount)
+            capacity: calculateCapacity(tileAccount, gameAccount)
         });
         onSelect();
+    };
+
+    const assignWorker = async (worker) => {
+        console.log(worker);
+        const workerTokenAccount = await spl.Token.getAssociatedTokenAddress(
+            spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+            spl.TOKEN_PROGRAM_ID,
+            worker.account.mintKey,
+            wallet.publicKey
+        );
+
+        await program.rpc.assignTask({
+            accounts: {
+                workerAccount: worker.publicKey,
+                workerTokenAccount,
+                tileAccount: tile.publicKey,
+                gameAccount: gameAccountKey,
+                authority: wallet.publicKey,
+                systemProgram: web3.SystemProgram.programId,
+                associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+                rent: web3.SYSVAR_RENT_PUBKEY
+            },
+            signers: []
+        });
     };
 
     const buildTileData = () => {
@@ -60,7 +91,12 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
                 </Row>
                 <Row>
                     <Col>
-                        {`Level: ${tile.level}`}
+                        {`Level: ${tileAccount.level}`}
+                    </Col>
+                </Row>
+                <Row>
+                    <Col>
+                        <SelectWorkerDropdown tileType={Object.keys(tileAccount.tileType)[0]} onSelect={assignWorker} />
                     </Col>
                 </Row>
             </>
@@ -69,7 +105,7 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
 
     return (
         <>
-            <Hexagon onClick={handleOnClick} cellStyle={getCellStyle()} key={tile.mintKey.toString()} q={tile.q} r={tile.r} s={-tile.q - tile.r} />
+            <Hexagon onClick={handleOnClick} cellStyle={getCellStyle()} key={tileAccount.mintKey.toString()} q={tileAccount.q} r={tileAccount.r} s={-tileAccount.q - tileAccount.r} />
             <Offcanvas placement="end" show={selected} onHide={onUnselect}>
                 <Offcanvas.Header closeButton>
                     <Offcanvas.Title>{`${tileTypeInfo.title} Tile`}</Offcanvas.Title>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ProgressBar, Row } from 'react-bootstrap';
 import './Skill.css';
+import skillTypesMapping from './skillTypesMapping';
 
 const capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -26,7 +27,7 @@ const Skill = ({ skillName, skillInfo }) => {
 
     return (
         <div className="skill-space">
-            <Row>{capitalizeFirstLetter(skillName)}:</Row>
+            <Row>{skillTypesMapping[skillName].title}:</Row>
             <Row>&nbsp;&nbsp;&nbsp;&nbsp;Level: {level}</Row>
             <Row>&nbsp;&nbsp;&nbsp;&nbsp;Experience: {`${experience}/${getExperienceNeeded(level)}`}</Row>
             <Row>

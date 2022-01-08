@@ -85,7 +85,7 @@ const Workers = ({ showWorkers, onClose }) => {
     const buildWorkerRows = () => {
         return gameData.workers.map(({ account }, index) => {
             return (
-                <Accordion alwaysOpen>
+                <Accordion>
                     <Worker worker={account} workerName={`Worker ${index}`} />
                 </Accordion>
             );
