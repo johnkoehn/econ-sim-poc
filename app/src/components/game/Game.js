@@ -31,7 +31,6 @@ const Game = () => {
                     <Tiles />
                 </Layout>
             </HexGrid>
-            <p>Connected</p>
         </Container>
     );
 };

@@ -41,7 +41,7 @@ pub struct GameAccount {
     pub current_q: i32,
     pub current_r: i32,
 
-    // important for keep cycle time in sync
+    // important for keeping cycle time in sync
     pub start_time: i64,
 
     // this is the number of seconds in a cycle
