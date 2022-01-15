@@ -59,10 +59,11 @@ pub fn get_worker_skill<'a>(tile_type: &TileTypes, skills: &'a mut Skills) -> (&
     }
 }
 
-pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String) -> ProgramResult {
+pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String, worker_name: [u8; 10]) -> ProgramResult {
     let worker = &mut ctx.accounts.worker_account;
     let worker_mint = &mut ctx.accounts.worker_mint;
 
+    worker.worker_name = worker_name;
     worker.game_account = ctx.accounts.game_account.key();
     worker.owner = ctx.accounts.receiver.key();
     worker.mint_key = worker_mint.key();
@@ -250,9 +251,9 @@ pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
 }
 
 #[derive(Accounts)]
-#[instruction(worker_mint_bump: u8, worker_mint_seed: String)]
+#[instruction(worker_mint_bump: u8, worker_mint_seed: String, worker_name: [u8; 10])]
 pub struct MintWorker<'info> {
-    #[account(init, payer=authority, space = 8 + 32 + 32 + 32 + 4 + 4 + 72 + 50)]
+    #[account(init, payer=authority, space = 8 + 32 + 10 + 32 + 32 + 4 + 4 + 72 + 50)]
     pub worker_account: Account<'info, WorkerAccount>,
 
     pub game_account: Account<'info, GameAccount>,
@@ -331,12 +332,14 @@ pub struct CompleteTask<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
-// 32 + 32 + 32 + 4 + 4 + 72 + 50
+// 32 + 10 + 32 + 32 + 4 + 4 + 72 + 50
 #[account]
 pub struct WorkerAccount {
     pub game_account: Pubkey,
 
-    // makes look up quicker but a user must always present actual proof throught NFT
+    pub worker_name: [u8; 10],
+
+    // makes look up quicker but a user must always present actual proof through NFT
     pub owner: Pubkey,
     pub mint_key: Pubkey,
 

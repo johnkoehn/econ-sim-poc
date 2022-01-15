@@ -17,8 +17,8 @@ export default {
     forge: {
         title: 'Forging'
     },
-    alchamey: {
-        title: 'Alchmey'
+    alchemy: {
+        title: 'Alchemy'
     },
     craft: {
         title: 'Crafting'

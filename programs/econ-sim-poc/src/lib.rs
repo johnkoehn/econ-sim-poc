@@ -23,8 +23,8 @@ pub mod econ_sim_poc {
         tiles::mint_tile(ctx, tile_type, tile_mint_bump, tile_mint_seed)
     }
 
-    pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String) -> ProgramResult {
-        workers::mint_worker(ctx, worker_mint_bump, worker_mint_seed)
+    pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String, worker_name: [u8; 10]) -> ProgramResult {
+        workers::mint_worker(ctx, worker_mint_bump, worker_mint_seed, worker_name)
     }
 
     pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {

@@ -4,6 +4,7 @@ import * as spl from '@solana/spl-token';
 const { assert } = require('chai');
 import { setTimeout } from 'timers/promises';
 import { nanoid } from 'nanoid';
+import { TextEncoder } from 'util'
 import { EconSimPoc, IDL } from '../target/types/econ_sim_poc';
 import createMintInfo from './util/createMintInfo';
 import getRandomTileType from './util/getRandomTileType';
@@ -14,6 +15,8 @@ const testKey1Info = require('./testKeys/testKey.json');
 const testKey2Info = require('./testKeys/testKey2.json');
 const testKey1 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey1Info));
 const testKey2 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey2Info));
+
+const encoder = new TextEncoder();
 
 describe.skip('econ-sim-poc', () => {
 
@@ -211,7 +214,7 @@ describe.skip('econ-sim-poc', () => {
         testKey1.publicKey
       );
 
-      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
+      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, encoder.encode(nanoid(10)), {
         accounts: {
           gameAccount: gameAccountKey.publicKey,
           workerAccount: workerAccountKey.publicKey,
@@ -243,7 +246,7 @@ describe.skip('econ-sim-poc', () => {
         testKey1.publicKey
       );
 
-      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
+      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, encoder.encode(nanoid(10)), {
         accounts: {
           gameAccount: gameAccountKey.publicKey,
           workerAccount: testWorkerAccountKey.publicKey,

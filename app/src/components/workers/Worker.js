@@ -7,12 +7,14 @@ import { web3 } from '@project-serum/anchor';
 import { useEconSim } from '../../providers/EconSimProvider';
 import LoadingButton from '../util/LoadingButton';
 import Skill from './Skill';
+import uint8ArrayToString from '../../util/uint8ArrayToString';
 
-const Worker = ({ worker, workerName }) => {
+const Worker = ({ worker }) => {
     const { gameAccountKey, program, refreshWorker } = useEconSim();
     const wallet = useWallet();
 
     const workerAccount = worker.account;
+    const workerName = uint8ArrayToString(workerAccount.workerName);
 
     const completeTask = async () => {
         const task = workerAccount.task;

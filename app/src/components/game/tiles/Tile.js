@@ -9,10 +9,13 @@ import tileTypesMapping from './tileTypesMapping';
 import { useEconSim } from '../../../providers/EconSimProvider';
 import { calculateCapacity } from '../../../gameLogic/tileMath';
 import SelectWorkerDropdown from '../../workers/SelectWorkerDropdown';
+import Error from '../../util/Error';
+import AssignedWorkersTable from './AssignedWorkersTable';
 
 const Tile = ({ tile, onSelect, onUnselect, selected }) => {
     // tile data is information not directly stored in the account such as current capacity
     const [tileData, setTileData] = useState(undefined);
+    const [error, setError] = useState('');
     const { gameAccount, gameAccountKey, program, refreshWorker } = useEconSim();
     const wallet = useWallet();
 
@@ -49,6 +52,7 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
     };
 
     const assignWorker = async (worker) => {
+        setError('');
         const workerTokenAccount = await spl.Token.getAssociatedTokenAddress(
             spl.ASSOCIATED_TOKEN_PROGRAM_ID,
             spl.TOKEN_PROGRAM_ID,
@@ -56,19 +60,24 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
             wallet.publicKey
         );
 
-        await program.rpc.assignTask({
-            accounts: {
-                workerAccount: worker.publicKey,
-                workerTokenAccount,
-                tileAccount: tile.publicKey,
-                gameAccount: gameAccountKey,
-                authority: wallet.publicKey,
-                systemProgram: web3.SystemProgram.programId,
-                associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-                rent: web3.SYSVAR_RENT_PUBKEY
-            },
-            signers: []
-        });
+        try {
+            await program.rpc.assignTask({
+                accounts: {
+                    workerAccount: worker.publicKey,
+                    workerTokenAccount,
+                    tileAccount: tile.publicKey,
+                    gameAccount: gameAccountKey,
+                    authority: wallet.publicKey,
+                    systemProgram: web3.SystemProgram.programId,
+                    associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+                    rent: web3.SYSVAR_RENT_PUBKEY
+                },
+                signers: []
+            });
+        } catch (err) {
+            setError(`Failed to assign worker, received message: ${err.message}`);
+            return;
+        }
 
         await refreshWorker(worker);
     };
@@ -98,6 +107,14 @@ const Tile = ({ tile, onSelect, onUnselect, selected }) => {
                 <Row>
                     <Col>
                         <SelectWorkerDropdown tileType={Object.keys(tileAccount.tileType)[0]} onSelect={assignWorker} />
+                    </Col>
+                </Row>
+                <Row>
+                    <AssignedWorkersTable tile={tile} />
+                </Row>
+                <Row>
+                    <Col>
+                        <Error message={error} />
                     </Col>
                 </Row>
             </>
