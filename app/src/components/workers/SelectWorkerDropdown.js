@@ -3,6 +3,7 @@ import { Dropdown } from 'react-bootstrap';
 import { useEconSim } from '../../providers/EconSimProvider';
 import tileTypeToSkills from './tileTypeToSkills';
 import skillTypesMapping from './skillTypesMapping';
+import uint8ArrayToString from '../../util/uint8ArrayToString';
 
 const SelectWorkerDropdown = ({ tileType, onSelect }) => {
     const { workers } = useEconSim();
@@ -26,10 +27,11 @@ const SelectWorkerDropdown = ({ tileType, onSelect }) => {
                 const { account } = worker;
                 const skillTitle = skillTypesMapping[skillName].title;
                 const skillLevel = account.skills[skillName].level;
+                const name = uint8ArrayToString(account.workerName);
 
                 return (
                     <Dropdown.Item key={worker.publicKey.toString()} onClick={() => onSelect(worker)}>
-                        {`Worker - ${skillTitle} Level ${skillLevel}`}
+                        {`Worker ${name} - ${skillTitle} Level ${skillLevel}`}
                     </Dropdown.Item>
                 );
             });
