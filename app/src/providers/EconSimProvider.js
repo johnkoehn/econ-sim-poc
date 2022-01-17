@@ -32,6 +32,7 @@ const EconSimProvider = ({ children }) => {
     const [workers, setWorkers] = useState(undefined);
     const [tilesOwned, setTilesOwned] = useState(undefined);
     const [isLoading, setIsLoading] = useState(true);
+    const [tileTokenAccounts, setTileTokenAccounts] = useState(undefined);
 
     const wallet = useWallet();
 
@@ -58,11 +59,16 @@ const EconSimProvider = ({ children }) => {
 
         const playerPublicKey = wallet.publicKey.toString();
 
+        const allTileTokenAccounts = await newProgram.account.tileTokenAccount.all();
+        console.log(allTileTokenAccounts);
+        const ownedTileTokenAccounts = allTileTokenAccounts.filter((x) => x.account.owner.toString() === playerPublicKey);
+        console.log(ownedTileTokenAccounts);
+        setTileTokenAccounts(ownedTileTokenAccounts);
+
         const tilesPlayerOwns = currentTiles.filter((x) => x.account.owner.toString() === playerPublicKey);
         setTilesOwned(tilesPlayerOwns);
 
         const allWorkers = await newProgram.account.workerAccount.all();
-        console.log(allWorkers);
 
         const playerOwnedWorkers = allWorkers.filter((x) => x.account.owner.toString() === playerPublicKey);
         setWorkers(playerOwnedWorkers);
@@ -91,6 +97,27 @@ const EconSimProvider = ({ children }) => {
         setWorkers(updatedWorkers);
     };
 
+    const addTileTokenAccount = (tileTokenAccount) => {
+        setTileTokenAccounts([...tileTokenAccounts, tileTokenAccount]);
+    };
+
+    const refreshTileTokenAccount = async (tileTokenAccount) => {
+        const updatedTileTokenAccount = await program.account.tileTokenAccount.fetch(tileTokenAccount.publicKey);
+
+        // TODO: Refactor this with refresh worker above
+        const updatedTileTokenAccounts = tileTokenAccounts.map((x) => {
+            if (x.publicKey.toString() === tileTokenAccount.publicKey.toString()) {
+                return {
+                    publicKey: tileTokenAccount.publicKey,
+                    account: updatedTileTokenAccount
+                };
+            }
+            return x;
+        });
+
+        setTileTokenAccounts(updatedTileTokenAccounts);
+    };
+
     const value = useMemo(() => {
         return {
             tiles,
@@ -103,9 +130,12 @@ const EconSimProvider = ({ children }) => {
             workers,
             isLoading,
             addWorker,
-            refreshWorker
+            refreshWorker,
+            tileTokenAccounts,
+            refreshTileTokenAccount,
+            addTileTokenAccount
         };
-    }, [isLoading, workers]);
+    }, [isLoading, workers, tileTokenAccounts]);
 
     return (
         <EconSimContext.Provider value={value}>

@@ -3,6 +3,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Table } from 'react-bootstrap';
 import { useEconSim } from '../../../providers/EconSimProvider';
 import uint8ArrayToString from '../../../util/uint8ArrayToString';
+import TaskProgressBar from '../../workers/tasks/TaskProgressBar';
 
 const AssignedWorkersTable = ({ tile }) => {
     const gameData = useEconSim();
@@ -24,9 +25,11 @@ const AssignedWorkersTable = ({ tile }) => {
         return assignedWorkers.map((worker) => {
             const workerName = uint8ArrayToString(worker.account.workerName);
             return (
-                <tr>
+                <tr key={worker.publicKey.toString()}>
                     <td>{`Worker ${workerName}`}</td>
-                    <td>hey</td>
+                    <td>
+                        <TaskProgressBar worker={worker} tile={tile} key={worker.publicKey.toString()} />
+                    </td>
                 </tr>
             );
         });

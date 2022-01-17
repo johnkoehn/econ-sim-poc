@@ -27,7 +27,7 @@ const uiAccount = new web3.PublicKey('4gf27XqAFNokyB3mQNUEfPuVp32Nvb5427GvFMN63r
 describe('Setup testing environment for the UI', () => {
     it('should create the game', async () => {
         // 2 rings out, cycle time of 10 seconds
-        await program.rpc.initializeGame(2, 10, 3, {
+        await program.rpc.initializeGame(2, 60, 10, {
             accounts: {
                 gameAccount: gameAccountKey.publicKey,
                 signer: provider.wallet.publicKey,
