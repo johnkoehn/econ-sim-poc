@@ -11,7 +11,7 @@ use spl_token;
 use crate::{
     game::{GameAccount, cycles::get_current_cycle_time},
     tiles::{TileAccount, TileTokenAccount, TileTypes, tile_token_account_checks, TileErrorCodes, hexagons::calculate_distance},
-    workers::{WorkerAccount, worker_ownership_checks, WorkerErrorCodes, TaskTypes, calculate_worker_capacity, Task}
+    workers::{WorkerAccount, worker_ownership_checks, WorkerErrorCodes, TaskTypes, calculate_worker_capacity, Task, calculate_skill_level}
 };
 
 // make sure we know the mint bump and seed for each resource
@@ -49,6 +49,19 @@ pub fn transport_resource(ctx: Context<TransportResource>) -> ProgramResult {
         return Err(WorkerErrorCodes::WorkerHasTask.into());
     }
 
+    // do the tiles and worker belong to the given game account?
+    if worker_account.game_account != game_account.key() {
+        return Err(WorkerErrorCodes::InvalidGameAccountForWorker.into());
+    }
+
+    if start_tile.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
+    }
+
+    if destination_tile.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
+    }
+
     if destination_tile.tile_type != TileTypes::City {
         return Err(ResourceMintErrorCodes::DestinationTileMustBeCity.into());
     }
@@ -81,7 +94,7 @@ pub fn transport_resource(ctx: Context<TransportResource>) -> ProgramResult {
     Ok(())
 }
 
-pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, resource_mint_bump: u8, resource_mint_seed: String) -> ProgramResult {
+pub fn complete_transport_resource(ctx: Context<CompleteTransportResource>, resource_mint_bump: u8, resource_mint_seed: String) -> ProgramResult {
     msg!("here0");
     let game_account = &ctx.accounts.game_account;
     let start_tile = &ctx.accounts.start_tile;
@@ -97,6 +110,23 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
 
     if worker_account.task.is_none() {
         return Err(WorkerErrorCodes::WorkerHasNoTask.into());
+    }
+
+    // game account checks
+    if worker_account.game_account != game_account.key() {
+        return Err(WorkerErrorCodes::InvalidGameAccountForWorker.into());
+    }
+
+    if start_tile.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
+    }
+
+    if destination_tile.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
+    }
+
+    if resource_info.game_account != game_account.key() {
+        return Err(ResourceMintErrorCodes::InvalidGameAccountForResourceMint.into());
     }
 
     let task = worker_account.task.as_ref().unwrap().clone();
@@ -151,7 +181,10 @@ pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, res
         task.reward,
     )?;
 
+    // TODO -- we need to incorporate amount of tiles the worker went through
     worker_account.skills.transport.experience += task.reward;
+    worker_account.skills.transport.level = calculate_skill_level(worker_account.skills.transport.level,  worker_account.skills.transport.experience);
+
     worker_account.task = None;
 
     Ok(())
@@ -192,16 +225,16 @@ pub struct CompleteTransportResource<'info> {
 
 #[derive(Accounts)]
 pub struct TransportResource<'info> {
-    pub game_account: Account<'info, GameAccount>,
-    pub start_tile: Account<'info, TileAccount>,
-    pub destination_tile: Account<'info, TileAccount>,
+    pub game_account: Box<Account<'info, GameAccount>>,
+    pub start_tile: Box<Account<'info, TileAccount>>,
+    pub destination_tile: Box<Account<'info, TileAccount>>,
 
     #[account(mut)]
-    pub tile_token_account: Account<'info, TileTokenAccount>,
+    pub tile_token_account: Box<Account<'info, TileTokenAccount>>,
 
     #[account(mut)]
-    pub worker_account: Account<'info, WorkerAccount>,
-    pub worker_token_account: Account<'info, TokenAccount>,
+    pub worker_account: Box<Account<'info, WorkerAccount>>,
+    pub worker_token_account: Box<Account<'info, TokenAccount>>,
 
     pub authority: Signer<'info>,
 
@@ -264,6 +297,9 @@ pub enum ResourceTypes {
 
 #[error]
 pub enum ResourceMintErrorCodes {
+    #[msg("Invalid Game Account for Resoure Mint")]
+    InvalidGameAccountForResourceMint,
+
     #[msg("Destination tile must be a city")]
     DestinationTileMustBeCity,
 

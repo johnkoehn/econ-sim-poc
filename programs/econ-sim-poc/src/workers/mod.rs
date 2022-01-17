@@ -6,7 +6,7 @@ use anchor_spl::{
 };
 use spl_token;
 
-use crate::{tiles::{TileAccount, TileTypes, TileTokenAccount, tile_token_account_checks}, game::{GameAccount, cycles::calculate_capacity}};
+use crate::{tiles::{TileAccount, TileTypes, TileTokenAccount, tile_token_account_checks, TileErrorCodes}, game::{GameAccount, cycles::calculate_capacity}};
 
 pub fn calculate_worker_capacity(level: u8) -> u64 {
     if level == 1 {
@@ -14,6 +14,19 @@ pub fn calculate_worker_capacity(level: u8) -> u64 {
     }
 
     u64::pow(2, (level - 1) as u32)
+}
+
+pub fn calculate_skill_level(current_level: u8, experience: u64) -> u8 {
+    if current_level == std::u8::MAX {
+        return current_level
+    }
+
+    let exp_to_next_level: u64 = u64::pow(3, (current_level + 1) as u32);
+    if experience >=  exp_to_next_level {
+        return current_level + 1
+    }
+
+    return current_level
 }
 
 pub fn worker_ownership_checks(worker_account: &Account<WorkerAccount>, worker_token_account: &Account<TokenAccount>, authority: &Signer) -> ProgramResult {
@@ -46,10 +59,12 @@ pub fn get_worker_skill<'a>(tile_type: &TileTypes, skills: &'a mut Skills) -> (&
     }
 }
 
-pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String) -> ProgramResult {
+pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String, worker_name: [u8; 10]) -> ProgramResult {
     let worker = &mut ctx.accounts.worker_account;
     let worker_mint = &mut ctx.accounts.worker_mint;
 
+    worker.worker_name = worker_name;
+    worker.game_account = ctx.accounts.game_account.key();
     worker.owner = ctx.accounts.receiver.key();
     worker.mint_key = worker_mint.key();
     worker.q = 0;
@@ -80,7 +95,7 @@ pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_s
             level: 1,
             experience: 0
         },
-        alchamey: Skill {
+        alchemy: Skill {
             level: 1,
             experience: 0
         },
@@ -133,6 +148,14 @@ pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
     let tile_account = &mut ctx.accounts.tile_account;
     let game_account = &ctx.accounts.game_account;
 
+    if worker_account.game_account != game_account.key() {
+        return Err(WorkerErrorCodes::InvalidGameAccountForWorker.into());
+    }
+
+    if tile_account.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
+    }
+
     if tile_account.tile_type == TileTypes::City {
         return Err(WorkerErrorCodes::InvalidTileType.into())
     }
@@ -173,11 +196,20 @@ pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
     let authority = &ctx.accounts.authority;
     let tile_account = &mut ctx.accounts.tile_account;
     let tile_token_account = &mut ctx.accounts.tile_token_account;
+    let game_account = &ctx.accounts.game_account;
 
     worker_ownership_checks(worker_account, worker_token_account, authority)?;
 
     if worker_account.task.is_none() {
         return Err(WorkerErrorCodes::WorkerHasNoTask.into())
+    }
+
+    if worker_account.game_account != game_account.key() {
+        return Err(WorkerErrorCodes::InvalidGameAccountForWorker.into());
+    }
+
+    if tile_account.game_account != game_account.key() {
+        return Err(TileErrorCodes::InvalidGameAccountForTile.into());
     }
 
     let current_time = Clock::get().unwrap().unix_timestamp;
@@ -211,16 +243,20 @@ pub fn complete_task(ctx: Context<CompleteTask>) -> ProgramResult {
     let result = get_worker_skill(&tile_account.tile_type, skills);
     let skill = result.0;
     skill.experience += task.reward;
+    skill.level = calculate_skill_level(skill.level, skill.experience);
+
     worker_account.task = None;
 
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(worker_mint_bump: u8, worker_mint_seed: String)]
+#[instruction(worker_mint_bump: u8, worker_mint_seed: String, worker_name: [u8; 10])]
 pub struct MintWorker<'info> {
-    #[account(init, payer=authority, space = 8 + 32 + 32 + 4 + 4 + 72 + 50)]
+    #[account(init, payer=authority, space = 8 + 32 + 10 + 32 + 32 + 4 + 4 + 72 + 50)]
     pub worker_account: Account<'info, WorkerAccount>,
+
+    pub game_account: Account<'info, GameAccount>,
 
     #[account(
         init,
@@ -283,6 +319,8 @@ pub struct CompleteTask<'info> {
     pub worker_account: Account<'info, WorkerAccount>,
     pub worker_token_account: Account<'info, TokenAccount>,
 
+    pub game_account: Account<'info, GameAccount>,
+
     #[account(mut)]
     pub tile_account: Account<'info, TileAccount>,
 
@@ -294,10 +332,14 @@ pub struct CompleteTask<'info> {
     pub rent: Sysvar<'info, Rent>
 }
 
-// 32 + 32 + 4 + 4 + 72 + 50
+// 32 + 10 + 32 + 32 + 4 + 4 + 72 + 50
 #[account]
 pub struct WorkerAccount {
-    // makes look up quicker but a user must always present actual proof throught NFT
+    pub game_account: Pubkey,
+
+    pub worker_name: [u8; 10],
+
+    // makes look up quicker but a user must always present actual proof through NFT
     pub owner: Pubkey,
     pub mint_key: Pubkey,
 
@@ -318,9 +360,9 @@ pub struct Skills {
     pub woodcutting: Skill,
     pub gather: Skill,
     pub transport: Skill,
-    // city types (forge, market, alchamey, factory)
+    // city types (forge, market, alchemy, factory)
     pub forge: Skill,
-    pub alchamey: Skill,
+    pub alchemy: Skill,
     pub craft: Skill
 }
 
@@ -348,12 +390,15 @@ pub enum TaskTypes {
     Gather = 3,
     Transport = 4,
     Forge = 5,
-    Alchamey = 6,
+    Alchemy = 6,
     Craft = 7
 }
 
 #[error]
 pub enum WorkerErrorCodes {
+    #[msg("Invalid Game Account for Worker")]
+    InvalidGameAccountForWorker,
+
     #[msg("You do not own the worker")]
     NotWorkerOwner,
 

@@ -4,35 +4,21 @@ import * as spl from '@solana/spl-token';
 const { assert } = require('chai');
 import { setTimeout } from 'timers/promises';
 import { nanoid } from 'nanoid';
+import { TextEncoder } from 'util'
 import { EconSimPoc, IDL } from '../target/types/econ_sim_poc';
 import createMintInfo from './util/createMintInfo';
 import getRandomTileType from './util/getRandomTileType';
+import tileTypes from './types/tileTypes';
+import resourceTypes from './types/resourceTypes';
 
 const testKey1Info = require('./testKeys/testKey.json');
 const testKey2Info = require('./testKeys/testKey2.json');
 const testKey1 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey1Info));
 const testKey2 = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(testKey2Info));
 
-const tileTypes = {
-  '0': { food: {} },
-  '1': { iron: {} },
-  '2': { coal: {} },
-  '3': { wood: {} },
-  '4': { rareMetals: {} },
-  '5': { herbs: {} },
-  '6': { city: {} }
-}
+const encoder = new TextEncoder();
 
-const resourceTypes = {
-  '0': { food: {} },
-  '1': { iron: {} },
-  '2': { coal: {} },
-  '3': { wood: {} },
-  '4': { rareMetals: {} },
-  '5': { herbs: {} }
-}
-
-describe('econ-sim-poc', () => {
+describe.skip('econ-sim-poc', () => {
 
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.Provider.env());
@@ -50,6 +36,7 @@ describe('econ-sim-poc', () => {
 
   describe('Tiles', () => {
     it('It should initialize the game', async () => {
+      console.log(program.provider.wallet.publicKey.toString());
       await program.rpc.initializeGame(1, 1, 8, {
         accounts: {
           gameAccount: gameAccountKey.publicKey,
@@ -227,8 +214,9 @@ describe('econ-sim-poc', () => {
         testKey1.publicKey
       );
 
-      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
+      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, encoder.encode(nanoid(10)), {
         accounts: {
+          gameAccount: gameAccountKey.publicKey,
           workerAccount: workerAccountKey.publicKey,
           workerTokenAccount: workerTokenAccount,
           workerMint: mintInfo.mint,
@@ -258,8 +246,9 @@ describe('econ-sim-poc', () => {
         testKey1.publicKey
       );
 
-      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, {
+      await program.rpc.mintWorker(mintInfo.mintBump, mintInfo.seed, encoder.encode(nanoid(10)), {
         accounts: {
+          gameAccount: gameAccountKey.publicKey,
           workerAccount: testWorkerAccountKey.publicKey,
           workerTokenAccount: testWorkerTokenAccount,
           workerMint: mintInfo.mint,
@@ -333,6 +322,7 @@ describe('econ-sim-poc', () => {
       try {
         await program.rpc.completeTask({
           accounts: {
+            gameAccount: gameAccountKey.publicKey,
             tileTokenAccount: tileTokenAccountKey.publicKey,
             workerAccount: testWorkerAccountKey.publicKey,
             workerTokenAccount: testWorkerTokenAccount,
@@ -359,6 +349,7 @@ describe('econ-sim-poc', () => {
       try {
         await program.rpc.completeTask({
           accounts: {
+            gameAccount: gameAccountKey.publicKey,
             tileTokenAccount: tileTokenAccountKey.publicKey,
             workerAccount: testWorkerAccountKey.publicKey,
             workerTokenAccount: testWorkerTokenAccount,
@@ -385,6 +376,7 @@ describe('econ-sim-poc', () => {
       try {
         await program.rpc.completeTask({
           accounts: {
+            gameAccount: gameAccountKey.publicKey,
             tileTokenAccount: officalTileTokenAccountKey.publicKey,
             workerAccount: testWorkerAccountKey.publicKey,
             workerTokenAccount: testWorkerTokenAccount,
@@ -454,7 +446,7 @@ describe('econ-sim-poc', () => {
       console.log(resourceTokenAccount);
 
       await setTimeout(2000);
-      await program.rpc.compeleteTransportResource(resourceMintInfo.mintBump, resourceMintInfo.seed, {
+      await program.rpc.completeTransportResource(resourceMintInfo.mintBump, resourceMintInfo.seed, {
         accounts: {
           gameAccount: gameAccountKey.publicKey,
           startTile: tileAccountKey.publicKey,

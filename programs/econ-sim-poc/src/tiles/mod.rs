@@ -47,6 +47,7 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
     let tile_mint = &mut ctx.accounts.tile_mint;
     let tile_account = &mut ctx.accounts.tile_account;
 
+    tile_account.game_account = game_account.key();
     tile_account.owner = ctx.accounts.receiver.key();
     tile_account.mint_key = tile_mint.key();
     tile_account.tile_type = tile_type;
@@ -108,7 +109,7 @@ pub fn mint_tile(ctx: Context<MintTile>, tile_type: TileTypes, tile_mint_bump: u
 #[derive(Accounts)]
 #[instruction(tile_type: TileTypes, tile_mint_bump: u8, tile_mint_seed: String)]
 pub struct MintTile<'info> {
-    #[account(init, payer = authority, space = 8 + 32 + 32 + 1 + 4 + 4 + 1 + 1 + 1 + 8 + 8 + 8)]
+    #[account(init, payer = authority, space = 8 + 32 + 32 + 32 + 1 + 4 + 4 + 1 + 1 + 1 + 8 + 8 + 8)]
     pub tile_account: Account<'info, TileAccount>,
 
     #[account(has_one = authority, mut)]
@@ -147,6 +148,7 @@ pub struct MintTile<'info> {
 
 #[account]
 pub struct TileAccount {
+    pub game_account: Pubkey,
     pub owner: Pubkey,
     pub mint_key: Pubkey,
     pub tile_type: TileTypes,
@@ -184,6 +186,9 @@ pub struct TileTokenAccount {
 
 #[error]
 pub enum TileErrorCodes {
+    #[msg("Invalid Game Account for Tile")]
+    InvalidGameAccountForTile,
+
     #[msg("Max tiles minted")]
     MaxTiles,
 

@@ -10,7 +10,7 @@ use tiles::*;
 use workers::*;
 use resource_mints::*;
 
-declare_id!("5iUUMTJivwjNVUD4qqqdNuTnr79avJ76TuddrJvdwKXx");
+declare_id!("2gQqArNBd6qPP8xSJrfwuWMdKzfqkrHwcZL79h7wpvio");
 
 #[program]
 pub mod econ_sim_poc {
@@ -23,8 +23,8 @@ pub mod econ_sim_poc {
         tiles::mint_tile(ctx, tile_type, tile_mint_bump, tile_mint_seed)
     }
 
-    pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String) -> ProgramResult {
-        workers::mint_worker(ctx, worker_mint_bump, worker_mint_seed)
+    pub fn mint_worker(ctx: Context<MintWorker>, worker_mint_bump: u8, worker_mint_seed: String, worker_name: [u8; 10]) -> ProgramResult {
+        workers::mint_worker(ctx, worker_mint_bump, worker_mint_seed, worker_name)
     }
 
     pub fn assign_task(ctx: Context<AssignTask>) -> ProgramResult {
@@ -43,8 +43,8 @@ pub mod econ_sim_poc {
         resource_mints::transport_resource(ctx)
     }
 
-    pub fn compelete_transport_resource(ctx: Context<CompleteTransportResource>, resource_mint_bump: u8, resource_mint_seed: String) -> ProgramResult {
-        resource_mints::compelete_transport_resource(ctx, resource_mint_bump, resource_mint_seed)
+    pub fn complete_transport_resource(ctx: Context<CompleteTransportResource>, resource_mint_bump: u8, resource_mint_seed: String) -> ProgramResult {
+        resource_mints::complete_transport_resource(ctx, resource_mint_bump, resource_mint_seed)
     }
 }
 

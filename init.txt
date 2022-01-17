@@ -1,2 +1,4 @@
 solana airdrop 100 -k tests/testKeys/testKey.json
 solana airdrop 100 -k tests/testKeys/testKey2.json
+solana airdrop 100 bgEUZT6TdrRB1oRE9QtKEKjZXTksq2afeHqPRZeoTEq
+solana airdrop 100 4gf27XqAFNokyB3mQNUEfPuVp32Nvb5427GvFMN63r5p

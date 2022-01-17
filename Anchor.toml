@@ -1,12 +1,12 @@
 [programs.localnet]
-econ_sim_poc = "5iUUMTJivwjNVUD4qqqdNuTnr79avJ76TuddrJvdwKXx"
+econ_sim_poc = "2gQqArNBd6qPP8xSJrfwuWMdKzfqkrHwcZL79h7wpvio"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
 cluster = "localnet"
-wallet = "/Users/johnkoehn/.config/solana/id.json"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
